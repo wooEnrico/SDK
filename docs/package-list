@@ -1,0 +1,5 @@
+io.github.wooernico.kafka
+io.github.wooernico.kafka.configuration
+io.github.wooernico.kafka.consumer
+io.github.wooernico.kafka.handler
+io.github.wooernico.kafka.sender
