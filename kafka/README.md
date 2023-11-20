@@ -36,7 +36,7 @@
 ## spring boot application import
 
 ```
-@Import(value = {io.github.wooernico.kafka.configuration.AutoKafkaConfiguration.class})
+@AutoKafka
 ```
 
 ### example
@@ -44,7 +44,7 @@
 ```java
 
 @SpringBootApplication
-@Import(value = {io.github.wooernico.kafka.configuration.AutoKafkaConfiguration.class})
+@AutoKafka
 public class MyApplication {
     public static void main(String[] args) {
         new SpringApplicationBuilder(MyApplication.class)
