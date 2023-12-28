@@ -20,7 +20,6 @@
 
     <modules>
         <module>kafka-spring-boot-starter</module>
-        <module>kafka-spring-boot3-starter</module>
     </modules>
 
     <dependencyManagement>

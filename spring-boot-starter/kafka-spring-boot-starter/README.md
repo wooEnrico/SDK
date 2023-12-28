@@ -2,7 +2,7 @@
 
 ## dependency
 
-you can use in spring boot 2.x
+you can use in spring boot project
 
 ```xml
 
