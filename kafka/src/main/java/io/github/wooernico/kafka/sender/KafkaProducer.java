@@ -1,6 +1,7 @@
 package io.github.wooernico.kafka.sender;
 
 import io.github.wooernico.kafka.KafkaUtil;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.InitializingBean;
@@ -34,6 +35,15 @@ public class KafkaProducer implements InitializingBean, Disposable {
     }
 
     /**
+     * @param topic    主题topic
+     * @param value    数据
+     * @param callback 回调
+     */
+    public void send(String topic, String value, Callback callback) {
+        this.send(topic, null, value, callback);
+    }
+
+    /**
      * @param topic 主题topic
      * @param key   分区key
      * @param value 数据
@@ -41,6 +51,16 @@ public class KafkaProducer implements InitializingBean, Disposable {
      */
     public Future<RecordMetadata> send(String topic, String key, String value) {
         return this.send(topic, null, key, value);
+    }
+
+    /**
+     * @param topic    主题topic
+     * @param key      分区key
+     * @param value    数据
+     * @param callback 回调
+     */
+    public void send(String topic, String key, String value, Callback callback) {
+        this.send(topic, null, key, value, callback);
     }
 
     /**
@@ -57,6 +77,17 @@ public class KafkaProducer implements InitializingBean, Disposable {
     /**
      * @param topic     主题topic
      * @param partition 分区ID
+     * @param key       分区key
+     * @param value     数据
+     * @param callback  回调
+     */
+    public void send(String topic, Integer partition, String key, String value, Callback callback) {
+        this.send(topic, partition, null, key, value, callback);
+    }
+
+    /**
+     * @param topic     主题topic
+     * @param partition 分区ID
      * @param timestamp 时间戳
      * @param key       分区key
      * @param value     数据
@@ -65,6 +96,19 @@ public class KafkaProducer implements InitializingBean, Disposable {
     public Future<RecordMetadata> send(String topic, Integer partition, Long timestamp, String key, String value) {
         ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         return this.kafkaProducer.send(producerRecord);
+    }
+
+    /**
+     * @param topic     主题topic
+     * @param partition 分区ID
+     * @param timestamp 时间戳
+     * @param key       分区key
+     * @param value     数据
+     * @param callback  回调
+     */
+    public void send(String topic, Integer partition, Long timestamp, String key, String value, Callback callback) {
+        ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+        this.kafkaProducer.send(producerRecord, callback);
     }
 
     @Override

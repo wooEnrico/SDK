@@ -1,6 +1,7 @@
 import io.github.wooernico.kafka.sender.KafkaProducer;
 import io.github.wooernico.kafka.sender.ReactorKafkaSender;
 import io.github.wooernico.kafka.sender.SenderProperties;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.Ignore;
@@ -15,6 +16,12 @@ public class TestSender {
     private static final Logger log = LoggerFactory.getLogger(TestSender.class);
 
     private final int count = 100;
+
+    private static SenderProperties getSenderProperties() {
+        SenderProperties senderProperties = new SenderProperties();
+        senderProperties.addProperties(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        return senderProperties;
+    }
 
     @Ignore
     @org.junit.Test
@@ -41,19 +48,27 @@ public class TestSender {
     @Ignore
     @org.junit.Test
     public void testSender() throws Exception {
+
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+
         SenderProperties senderProperties = getSenderProperties();
 
         KafkaProducer kafkaProducer = new KafkaProducer(senderProperties.getProperties());
         kafkaProducer.afterPropertiesSet();
         for (int i = 0; i < count; i++) {
-            RecordMetadata test = kafkaProducer.send("test", i + "").get();
-            log.info("{}", test);
-        }
-    }
+            kafkaProducer.send("test", i + "", new Callback() {
+                @Override
+                public void onCompletion(RecordMetadata metadata, Exception exception) {
+                    countDownLatch.countDown();
+                    if (exception != null) {
+                        log.error("send error", exception);
+                    }
+                    log.info("send complete {}", metadata);
+                }
+            });
 
-    private static SenderProperties getSenderProperties() {
-        SenderProperties senderProperties = new SenderProperties();
-        senderProperties.addProperties(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-        return senderProperties;
+        }
+
+        countDownLatch.await();
     }
 }
