@@ -4,6 +4,7 @@ import io.github.wooernico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +37,36 @@ public class KafkaConsumer implements InitializingBean, Disposable {
 
     private final Executor pollExecutor;
 
+    private ConsumerRebalanceListener consumerRebalanceListener = new ConsumerRebalanceListener() {
+        @Override
+        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+            log.warn("revoke partitions {}", partitions.toString());
+        }
+
+        @Override
+        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+            log.info("assign partitions {}", partitions.toString());
+        }
+
+        @Override
+        public void onPartitionsLost(Collection<TopicPartition> partitions) {
+            log.info("lost partitions {}", partitions.toString());
+        }
+    };
+
     public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer) {
         this.name = name;
         this.consumerProperties = consumerProperties;
         this.consumer = consumer;
-        this.pollExecutor = Executors.newSingleThreadExecutor(new CustomizableThreadFactory(this.name + "-poll-"));
+        this.pollExecutor = getKafkaPollExecutor(this.name);
+    }
+
+    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
+        this.name = name;
+        this.consumerProperties = consumerProperties;
+        this.consumer = consumer;
+        this.consumerRebalanceListener = consumerRebalanceListener == null ? new NoOpConsumerRebalanceListener() : consumerRebalanceListener;
+        this.pollExecutor = getKafkaPollExecutor(this.name);
     }
 
     @Override
@@ -74,7 +100,7 @@ public class KafkaConsumer implements InitializingBean, Disposable {
         CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
         ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
         org.apache.kafka.clients.consumer.KafkaConsumer<String, String> kafkaConsumer = KafkaUtil.createKafkaConsumer(this.consumerProperties.getProperties());
-        kafkaConsumer.subscribe(this.consumerProperties.getTopic(), new RebalancedListener());
+        kafkaConsumer.subscribe(this.consumerProperties.getTopic(), consumerRebalanceListener);
 
         this.subscribers.put(threadPoolExecutor, kafkaConsumer);
 
@@ -102,21 +128,7 @@ public class KafkaConsumer implements InitializingBean, Disposable {
         });
     }
 
-
-    static class RebalancedListener implements ConsumerRebalanceListener {
-        @Override
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            log.warn("revoked partitions {}", partitions.toString());
-        }
-
-        @Override
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            log.info("assigned partitions {}", partitions.toString());
-        }
-
-        @Override
-        public void onPartitionsLost(Collection<TopicPartition> partitions) {
-            log.info("lost partitions {}", partitions.toString());
-        }
+    private Executor getKafkaPollExecutor(String name) {
+        return Executors.newSingleThreadExecutor(new CustomizableThreadFactory(name + "-poll-"));
     }
 }
