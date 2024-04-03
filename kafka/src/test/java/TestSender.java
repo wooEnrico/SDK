@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 
 public class TestSender {
 
@@ -19,13 +19,23 @@ public class TestSender {
     @Ignore
     @org.junit.Test
     public void testReactorSender() throws Exception {
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+
         SenderProperties senderProperties = getSenderProperties();
-        ReactorKafkaSender reactorKafkaSender = new ReactorKafkaSender(senderProperties);
+        ReactorKafkaSender reactorKafkaSender = new ReactorKafkaSender(senderProperties, objectSenderResult -> {
+            countDownLatch.countDown();
+            if (objectSenderResult.exception() != null) {
+                log.error("send error", objectSenderResult.exception());
+            }
+            log.info("send complete {}", objectSenderResult.recordMetadata());
+        });
         reactorKafkaSender.afterPropertiesSet();
 
-        Flux.interval(Duration.ofSeconds(1))
+        Flux.range(0, count)
                 .flatMap(integer -> reactorKafkaSender.send("test", integer + ""))
-                .blockLast();
+                .subscribe();
+
+        countDownLatch.await();
     }
 
     @Ignore
