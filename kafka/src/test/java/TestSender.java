@@ -29,7 +29,7 @@ public class TestSender {
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
         SenderProperties senderProperties = getSenderProperties();
-        ReactorKafkaSender reactorKafkaSender = new ReactorKafkaSender(senderProperties, objectSenderResult -> {
+        ReactorKafkaSender<Object> reactorKafkaSender = new ReactorKafkaSender<>(senderProperties, objectSenderResult -> {
             countDownLatch.countDown();
             if (objectSenderResult.exception() != null) {
                 log.error("send error", objectSenderResult.exception());
