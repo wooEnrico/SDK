@@ -6,30 +6,40 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
+import reactor.kafka.receiver.ReceiverPartition;
 import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
 
+import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class KafkaUtil {
 
-    private static final Logger log = LoggerFactory.getLogger(KafkaUtil.class);
-
-    public static reactor.kafka.receiver.KafkaReceiver<String, String> createKafkaReceiver(ConsumerProperties properties) {
+    public static reactor.kafka.receiver.KafkaReceiver<String, String> createKafkaReceiver(
+            ConsumerProperties properties,
+            Consumer<Collection<ReceiverPartition>> onAssign,
+            Consumer<Collection<ReceiverPartition>> onRevoke) {
         ReceiverOptions<String, String> receiverOption = ReceiverOptions.<String, String>create(properties.getProperties())
                 .withKeyDeserializer(new StringDeserializer())
                 .withValueDeserializer(new StringDeserializer())
                 .subscription(properties.getTopic())
-                .addAssignListener(partitions -> log.info("assign partitions : {}", partitions))
-                .addRevokeListener(partitions -> log.warn("revoke partitions : {}", partitions))
+                .addAssignListener(partitions -> {
+                    if (onAssign != null) {
+                        onAssign.accept(partitions);
+                    }
+                })
+                .addRevokeListener(partitions -> {
+                    if (onRevoke != null) {
+                        onRevoke.accept(partitions);
+                    }
+                })
                 .pollTimeout(properties.getPollTimeout())
                 .closeTimeout(properties.getCloseTimeout());
 
