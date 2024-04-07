@@ -5,12 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.wooenrico</groupId>
-        <artifactId>sdk-parent</artifactId>
+        <artifactId>spring-boot-starter</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>spring-boot-starter</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>kafka-spring-boot3-starter</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -18,19 +17,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <modules>
-        <module>kafka-spring-boot-starter</module>
-        <module>kafka-spring-boot3-starter</module>
-    </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.github.wooenrico</groupId>
-                <artifactId>kafka</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
+    <dependencies>
+        <dependency>
+            <groupId>io.github.wooenrico</groupId>
+            <artifactId>kafka</artifactId>
+        </dependency>
+    </dependencies>
 </project>

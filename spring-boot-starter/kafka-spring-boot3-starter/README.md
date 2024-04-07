@@ -2,7 +2,7 @@
 
 ## dependency
 
-you can use in spring boot 2.x
+you can use in spring boot 3.x
 
 ```xml
 
@@ -10,7 +10,7 @@ you can use in spring boot 2.x
 
     <dependency>
         <groupId>io.github.wooenrico</groupId>
-        <artifactId>kafka-spring-boot-starter</artifactId>
+        <artifactId>kafka-spring-boot3-starter</artifactId>
         <version>1.0.0</version>
     </dependency>
 
