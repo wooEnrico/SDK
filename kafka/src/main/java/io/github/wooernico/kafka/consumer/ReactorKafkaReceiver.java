@@ -5,6 +5,7 @@ import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import reactor.core.Disposable;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ReactorKafkaReceiver<K, V> implements InitializingBean, Disposable {
+public class ReactorKafkaReceiver<K, V> implements InitializingBean, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(ReactorKafkaReceiver.class);
 
@@ -108,8 +109,9 @@ public class ReactorKafkaReceiver<K, V> implements InitializingBean, Disposable 
         return KafkaReceiver.create(receiverOption);
     }
 
+
     @Override
-    public void dispose() {
+    public void destroy() throws Exception {
         this.subscribers.forEach((threadPoolExecutor, disposable) -> {
             disposable.dispose();
             threadPoolExecutor.shutdown();

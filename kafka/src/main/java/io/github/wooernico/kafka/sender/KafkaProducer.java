@@ -4,12 +4,12 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.InitializingBean;
-import reactor.core.Disposable;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-public class KafkaProducer<K, V> implements InitializingBean, Disposable {
+public class KafkaProducer<K, V> implements InitializingBean, DisposableBean {
 
     private final Properties properties;
 
@@ -111,7 +111,7 @@ public class KafkaProducer<K, V> implements InitializingBean, Disposable {
     }
 
     @Override
-    public void dispose() {
+    public void destroy() throws Exception {
         this.kafkaProducer.close();
     }
 }

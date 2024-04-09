@@ -19,8 +19,7 @@ import java.util.Set;
 public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerFactory.class);
 
-    private final Set<ReactorKafkaReceiver<String, String>> reactorKafkaReceivers = new HashSet<>();
-    private final Set<KafkaConsumer<String, String>> kafkaConsumers = new HashSet<>();
+    private final Set<DisposableBean> disposableBeans = new HashSet<>();
     private final KafkaProperties kafkaProperties;
     private ApplicationContext applicationContext;
 
@@ -57,7 +56,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
                 for (int i = 0; i < properties.getConcurrency(); i++) {
                     KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<String, String>(key + i, properties, kafkaHandler);
                     kafkaConsumer.afterPropertiesSet();
-                    this.kafkaConsumers.add(kafkaConsumer);
+                    this.disposableBeans.add(kafkaConsumer);
                 }
 
             } else if (handler instanceof ReactorKafkaHandler) {
@@ -65,7 +64,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
                 for (int i = 0; i < properties.getConcurrency(); i++) {
                     ReactorKafkaReceiver<String, String> reactorKafkaReceiver = new ReactorKafkaReceiver<String, String>(key + i, properties, reactorKafkaHandler);
                     reactorKafkaReceiver.afterPropertiesSet();
-                    this.reactorKafkaReceivers.add(reactorKafkaReceiver);
+                    this.disposableBeans.add(reactorKafkaReceiver);
                 }
             } else {
                 log.error("no kafka handler for {}", properties);
@@ -76,7 +75,8 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
 
     @Override
     public void destroy() throws Exception {
-        this.reactorKafkaReceivers.forEach(ReactorKafkaReceiver::dispose);
-        this.kafkaConsumers.forEach(KafkaConsumer::dispose);
+        for (DisposableBean disposableBean : this.disposableBeans) {
+            disposableBean.destroy();
+        }
     }
 }

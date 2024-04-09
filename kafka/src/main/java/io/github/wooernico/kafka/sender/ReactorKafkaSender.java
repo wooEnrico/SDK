@@ -4,6 +4,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable {
+public class ReactorKafkaSender<K, V, T> implements InitializingBean, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(ReactorKafkaSender.class);
 
@@ -193,12 +194,12 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
     }
 
     @Override
-    public void dispose() {
-        this.subscribeMap.forEach((k, v) -> {
-            if (!v.isDisposed()) {
-                v.dispose();
-            }
-        });
+    public void destroy() throws Exception {
+        this.subscribeMap.entrySet().stream()
+                .filter(entry -> !entry.getValue().isDisposed())
+                .forEach(entry -> {
+                    entry.getValue().dispose();
+                });
     }
 
     /**

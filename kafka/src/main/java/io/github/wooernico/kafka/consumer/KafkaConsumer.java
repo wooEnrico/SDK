@@ -8,9 +8,9 @@ import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import reactor.core.Disposable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class KafkaConsumer<K, V> implements InitializingBean, Disposable {
+public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
@@ -121,11 +121,10 @@ public class KafkaConsumer<K, V> implements InitializingBean, Disposable {
     }
 
     @Override
-    public void dispose() {
+    public void destroy() throws Exception {
         this.close.set(true);
         this.subscribers.forEach((threadPoolExecutor, kafkaConsumer) -> {
             threadPoolExecutor.shutdown();
-            kafkaConsumer.close();
         });
     }
 
