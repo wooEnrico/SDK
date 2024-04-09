@@ -12,6 +12,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class TestConsumer {
 
@@ -23,7 +25,7 @@ public class TestConsumer {
 
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        KafkaConsumer test = new KafkaConsumer("test1", consumerProperties, new KafkaHandler() {
+        KafkaConsumer<String, String> test = new KafkaConsumer<String, String>("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
             @Override
             public void accept(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 log.info("{}", stringStringConsumerRecord.value());
@@ -40,7 +42,7 @@ public class TestConsumer {
 
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        ReactorKafkaReceiver test2 = new ReactorKafkaReceiver("reactor-test1", consumerProperties, new ReactorKafkaHandler() {
+        ReactorKafkaReceiver<String, String> test2 = new ReactorKafkaReceiver<String, String>("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
             @Override
             public Mono<Void> apply(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 log.info("{}", stringStringConsumerRecord.value());
@@ -55,7 +57,6 @@ public class TestConsumer {
 
     private static ConsumerProperties getConsumerProperties() {
         ConsumerProperties consumerProperties = new ConsumerProperties();
-        consumerProperties.addProperties(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
         consumerProperties.addProperties(ConsumerConfig.GROUP_ID_CONFIG, "test-group-id");
         consumerProperties.setTopic(Collections.singletonList("test"));
         return consumerProperties;

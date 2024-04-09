@@ -20,7 +20,7 @@ public class AutoKafkaConfiguration {
     @Bean
     @Primary
     @ConditionalOnProperty(name = "kafka.sender.primary.enabled", matchIfMissing = false, havingValue = "true")
-    public ReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new ReactorKafkaSender(kafkaProperties.getSender().get("primary"));
+    public ReactorKafkaSender<String, String, Object> reactorKafkaSender(KafkaProperties kafkaProperties) {
+        return new ReactorKafkaSender<String, String, Object>(kafkaProperties.getSender().get("primary"));
     }
 }

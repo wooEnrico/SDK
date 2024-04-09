@@ -1,6 +1,5 @@
 package io.github.wooernico.kafka.sender;
 
-import io.github.wooernico.kafka.KafkaUtil;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -10,11 +9,11 @@ import reactor.core.Disposable;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-public class KafkaProducer implements InitializingBean, Disposable {
+public class KafkaProducer<K, V> implements InitializingBean, Disposable {
 
     private final Properties properties;
 
-    private org.apache.kafka.clients.producer.KafkaProducer<String, String> kafkaProducer;
+    private org.apache.kafka.clients.producer.KafkaProducer<K, V> kafkaProducer;
 
     public KafkaProducer(Properties properties) {
         this.properties = properties;
@@ -22,7 +21,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.kafkaProducer = KafkaUtil.createKafkaProducer(this.properties);
+        this.kafkaProducer = new org.apache.kafka.clients.producer.KafkaProducer<K, V>(this.properties);
     }
 
     /**
@@ -30,7 +29,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value 数据
      * @return
      */
-    public Future<RecordMetadata> send(String topic, String value) {
+    public Future<RecordMetadata> send(String topic, V value) {
         return this.send(topic, null, value);
     }
 
@@ -39,7 +38,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value    数据
      * @param callback 回调
      */
-    public void send(String topic, String value, Callback callback) {
+    public void send(String topic, V value, Callback callback) {
         this.send(topic, null, value, callback);
     }
 
@@ -49,7 +48,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value 数据
      * @return
      */
-    public Future<RecordMetadata> send(String topic, String key, String value) {
+    public Future<RecordMetadata> send(String topic, K key, V value) {
         return this.send(topic, null, key, value);
     }
 
@@ -59,7 +58,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value    数据
      * @param callback 回调
      */
-    public void send(String topic, String key, String value, Callback callback) {
+    public void send(String topic, K key, V value, Callback callback) {
         this.send(topic, null, key, value, callback);
     }
 
@@ -70,7 +69,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value     数据
      * @return
      */
-    public Future<RecordMetadata> send(String topic, Integer partition, String key, String value) {
+    public Future<RecordMetadata> send(String topic, Integer partition, K key, V value) {
         return this.send(topic, partition, null, key, value);
     }
 
@@ -81,7 +80,7 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value     数据
      * @param callback  回调
      */
-    public void send(String topic, Integer partition, String key, String value, Callback callback) {
+    public void send(String topic, Integer partition, K key, V value, Callback callback) {
         this.send(topic, partition, null, key, value, callback);
     }
 
@@ -93,8 +92,8 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value     数据
      * @return
      */
-    public Future<RecordMetadata> send(String topic, Integer partition, Long timestamp, String key, String value) {
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+    public Future<RecordMetadata> send(String topic, Integer partition, Long timestamp, K key, V value) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, timestamp, key, value);
         return this.kafkaProducer.send(producerRecord);
     }
 
@@ -106,8 +105,8 @@ public class KafkaProducer implements InitializingBean, Disposable {
      * @param value     数据
      * @param callback  回调
      */
-    public void send(String topic, Integer partition, Long timestamp, String key, String value, Callback callback) {
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+    public void send(String topic, Integer partition, Long timestamp, K key, V value, Callback callback) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, timestamp, key, value);
         this.kafkaProducer.send(producerRecord, callback);
     }
 

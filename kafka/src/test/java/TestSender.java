@@ -29,7 +29,7 @@ public class TestSender {
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
         SenderProperties senderProperties = getSenderProperties();
-        ReactorKafkaSender<Object> reactorKafkaSender = new ReactorKafkaSender<>(senderProperties, objectSenderResult -> {
+        ReactorKafkaSender<String, String, Object> reactorKafkaSender = new ReactorKafkaSender<String, String, Object>(senderProperties, objectSenderResult -> {
             countDownLatch.countDown();
             if (objectSenderResult.exception() != null) {
                 log.error("send error", objectSenderResult.exception());
@@ -53,7 +53,7 @@ public class TestSender {
 
         SenderProperties senderProperties = getSenderProperties();
 
-        KafkaProducer kafkaProducer = new KafkaProducer(senderProperties.getProperties());
+        KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(senderProperties.getProperties());
         kafkaProducer.afterPropertiesSet();
         for (int i = 0; i < count; i++) {
             kafkaProducer.send("test", i + "", new Callback() {

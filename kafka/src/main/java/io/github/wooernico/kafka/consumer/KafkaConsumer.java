@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class KafkaConsumer implements InitializingBean, Disposable {
+public class KafkaConsumer<K, V> implements InitializingBean, Disposable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
@@ -27,9 +27,9 @@ public class KafkaConsumer implements InitializingBean, Disposable {
 
     private final ConsumerProperties consumerProperties;
 
-    private final Consumer<ConsumerRecord<String, String>> consumer;
+    private final Consumer<ConsumerRecord<K, V>> consumer;
 
-    private final Map<ThreadPoolExecutor, org.apache.kafka.clients.consumer.KafkaConsumer<String, String>> subscribers = new ConcurrentHashMap<>();
+    private final Map<ThreadPoolExecutor, org.apache.kafka.clients.consumer.KafkaConsumer<K, V>> subscribers = new ConcurrentHashMap<>();
 
     private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
 
@@ -54,14 +54,14 @@ public class KafkaConsumer implements InitializingBean, Disposable {
         }
     };
 
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer) {
+    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer) {
         this.name = name;
         this.consumerProperties = consumerProperties;
         this.consumer = consumer;
         this.pollExecutor = getKafkaPollExecutor(this.name);
     }
 
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
         this.name = name;
         this.consumerProperties = consumerProperties;
         this.consumer = consumer;
@@ -77,7 +77,7 @@ public class KafkaConsumer implements InitializingBean, Disposable {
     private void subscribe(ThreadPoolExecutor threadPoolExecutor) {
 
         if (threadPoolExecutor != null) {
-            org.apache.kafka.clients.consumer.KafkaConsumer<String, String> remove = this.subscribers.remove(threadPoolExecutor);
+            org.apache.kafka.clients.consumer.KafkaConsumer<K, V> remove = this.subscribers.remove(threadPoolExecutor);
             threadPoolExecutor.shutdown();
 
             if (remove == null) {
@@ -99,14 +99,15 @@ public class KafkaConsumer implements InitializingBean, Disposable {
     private void loopPoll() {
         CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
         ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
-        org.apache.kafka.clients.consumer.KafkaConsumer<String, String> kafkaConsumer = KafkaUtil.createKafkaConsumer(this.consumerProperties.getProperties());
+
+        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>((this.consumerProperties.getProperties()));
         kafkaConsumer.subscribe(this.consumerProperties.getTopic(), consumerRebalanceListener);
 
         this.subscribers.put(threadPoolExecutor, kafkaConsumer);
 
         while (!this.close.get()) {
-            ConsumerRecords<String, String> records = kafkaConsumer.poll(this.consumerProperties.getPollTimeout());
-            for (ConsumerRecord<String, String> record : records) {
+            ConsumerRecords<K, V> records = kafkaConsumer.poll(this.consumerProperties.getPollTimeout());
+            for (ConsumerRecord<K, V> record : records) {
                 threadPoolExecutor.execute(() -> {
                     try {
                         this.consumer.accept(record);

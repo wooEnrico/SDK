@@ -1,4 +1,4 @@
 package io.github.wooernico.kafka.handler;
 
-public interface IKafkaHandler {
+public interface IKafkaHandler<K, V> {
 }

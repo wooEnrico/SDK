@@ -1,6 +1,8 @@
 package io.github.wooernico.kafka.consumer;
 
 import io.github.wooernico.kafka.ExecutorConf;
+import io.github.wooernico.kafka.KafkaUtil;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.time.Duration;
 import java.util.List;
@@ -8,16 +10,23 @@ import java.util.Properties;
 
 public class ConsumerProperties {
 
+    /**
+     * kafka 消费者配置 {@link org.apache.kafka.clients.consumer.ConsumerConfig}
+     */
+    private final Properties defaultProperties = new Properties() {
+        {
+            put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+            put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+            put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        }
+    };
+
     private boolean enabled = true;
 
     /**
      * 处理器名
      */
     private String handlerBeanName;
-
-    /**
-     * kafka 消费者配置 {@link org.apache.kafka.clients.consumer.ConsumerConfig}
-     */
     private Properties properties = new Properties();
     private Duration pollTimeout = Duration.ofMillis(1000);
     private Duration closeTimeout = Duration.ofMillis(10000);
@@ -68,7 +77,7 @@ public class ConsumerProperties {
     }
 
     public Properties getProperties() {
-        return properties;
+        return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
     }
 
     public void setProperties(Properties properties) {

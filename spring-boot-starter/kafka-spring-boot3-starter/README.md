@@ -42,7 +42,7 @@ you can use in spring boot 3.x
 ```java
 
 @Service("myHandler")
-public class MyHandler implements KafkaHandler {
+public class MyHandler implements io.github.wooernico.kafka.handler.KafkaHandler {
     @Override
     public void accept(ConsumerRecord<String, String> record) {
         //TODO
@@ -55,7 +55,7 @@ public class MyHandler implements KafkaHandler {
 ```java
 
 @Service("myReactorHandler")
-public class MyReactorHandler implements ReactorKafkaHandler {
+public class MyReactorHandler implements io.github.wooernico.kafka.handler.ReactorKafkaHandler {
     @Override
     public Mono<Void> apply(ConsumerRecord<String, String> record) {
         //TODO
@@ -70,22 +70,19 @@ public class MyReactorHandler implements ReactorKafkaHandler {
 
 ```java
 
-import io.github.wooernico.kafka.sender.KafkaProducer;
-
 @Configuration
 @EnableConfigurationProperties(KafkaProperties.class)
 public class MyConfiguration {
     @Bean("testReactorKafkaSender")
     @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
-    public ReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new ReactorKafkaSender(kafkaProperties.getSender().get("test"));
+    public ReactorKafkaSender<String, String, Object> reactorKafkaSender(KafkaProperties kafkaProperties) {
+        return new io.github.wooernico.kafka.sender.ReactorKafkaSender<>(kafkaProperties.getSender().get("test"));
     }
-
 
     @Bean("test2KafkaProducer")
     @ConditionalOnProperty(name = "kafka.sender.test2.enabled", matchIfMissing = false, havingValue = "true")
-    public ReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new io.github.wooernico.kafka.sender.KafkaProducer(kafkaProperties.getSender().get("test2").getProperties());
+    public KafkaProducer<String, String> reactorKafkaSender(KafkaProperties kafkaProperties) {
+        return new io.github.wooernico.kafka.sender.KafkaProducer<>(kafkaProperties.getSender().get("test2").getProperties());
     }
 }
 ```
@@ -97,14 +94,14 @@ public class MyConfiguration {
 @Service
 public class Sender implements InitializingBean {
     @Autowired
-    private ReactorKafkaSender reactorKafkaSender;
+    private ReactorKafkaSender<String, String, Object> reactorKafkaSender;
     @Autowired
     @Qualifier("testReactorKafkaSender")
-    private ReactorKafkaSender testReactorKafkaSender;
+    private ReactorKafkaSender<String, String, Object> testReactorKafkaSender;
 
     @Autowired
     @Qualifier("test2KafkaProducer")
-    private io.github.wooernico.kafka.sender.KafkaProducer kafkaProducer;
+    private io.github.wooernico.kafka.sender.KafkaProducer<String, String> kafkaProducer;
 
 
     @Override

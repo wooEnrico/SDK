@@ -19,8 +19,8 @@ import java.util.Set;
 public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerFactory.class);
 
-    private final Set<ReactorKafkaReceiver> reactorKafkaReceivers = new HashSet<>();
-    private final Set<KafkaConsumer> kafkaConsumers = new HashSet<>();
+    private final Set<ReactorKafkaReceiver<String, String>> reactorKafkaReceivers = new HashSet<>();
+    private final Set<KafkaConsumer<String, String>> kafkaConsumers = new HashSet<>();
     private final KafkaProperties kafkaProperties;
     private ApplicationContext applicationContext;
 
@@ -55,7 +55,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
             if (handler instanceof KafkaHandler) {
                 KafkaHandler kafkaHandler = (KafkaHandler) handler;
                 for (int i = 0; i < properties.getConcurrency(); i++) {
-                    KafkaConsumer kafkaConsumer = new KafkaConsumer(key + i, properties, kafkaHandler);
+                    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<String, String>(key + i, properties, kafkaHandler);
                     kafkaConsumer.afterPropertiesSet();
                     this.kafkaConsumers.add(kafkaConsumer);
                 }
@@ -63,7 +63,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
             } else if (handler instanceof ReactorKafkaHandler) {
                 ReactorKafkaHandler reactorKafkaHandler = (ReactorKafkaHandler) handler;
                 for (int i = 0; i < properties.getConcurrency(); i++) {
-                    ReactorKafkaReceiver reactorKafkaReceiver = new ReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
+                    ReactorKafkaReceiver<String, String> reactorKafkaReceiver = new ReactorKafkaReceiver<String, String>(key + i, properties, reactorKafkaHandler);
                     reactorKafkaReceiver.afterPropertiesSet();
                     this.reactorKafkaReceivers.add(reactorKafkaReceiver);
                 }
