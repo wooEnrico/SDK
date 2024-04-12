@@ -37,13 +37,14 @@ public class ReactorKafkaReceiver<K, V> implements InitializingBean, DisposableB
 
     private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
 
-    private Consumer<Collection<ReceiverPartition>> onAssign = partitions -> log.info("assign partitions : {}", partitions);
-    private Consumer<Collection<ReceiverPartition>> onRevoke = partitions -> log.warn("revoke partitions : {}", partitions);
+    private final Consumer<Collection<ReceiverPartition>> onAssign;
+    private final Consumer<Collection<ReceiverPartition>> onRevoke;
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<K, V>, Mono<Void>> consumer) {
-        this.name = name;
-        this.consumerProperties = consumerProperties;
-        this.consumer = consumer;
+        this(name, consumerProperties, consumer,
+                partitions -> log.info("assigned partitions : {}", partitions),
+                partitions -> log.warn("revoked partitions : {}", partitions)
+        );
     }
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<K, V>, Mono<Void>> consumer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
@@ -52,11 +53,13 @@ public class ReactorKafkaReceiver<K, V> implements InitializingBean, DisposableB
         this.consumer = consumer;
         this.onAssign = onAssign;
         this.onRevoke = onRevoke;
+
+        this.subscribe(null);
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.subscribe(null);
+        log.info("reactor kafka receiver named [{}] init with {}", this.name, this.consumerProperties);
     }
 
     private void subscribe(ThreadPoolExecutor threadPoolExecutor) {

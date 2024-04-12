@@ -37,28 +37,25 @@ public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
 
     private final Executor pollExecutor;
 
-    private ConsumerRebalanceListener consumerRebalanceListener = new ConsumerRebalanceListener() {
-        @Override
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            log.warn("revoke partitions {}", partitions.toString());
-        }
-
-        @Override
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            log.info("assign partitions {}", partitions.toString());
-        }
-
-        @Override
-        public void onPartitionsLost(Collection<TopicPartition> partitions) {
-            log.info("lost partitions {}", partitions.toString());
-        }
-    };
+    private final ConsumerRebalanceListener consumerRebalanceListener;
 
     public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer) {
-        this.name = name;
-        this.consumerProperties = consumerProperties;
-        this.consumer = consumer;
-        this.pollExecutor = getKafkaPollExecutor(this.name);
+        this(name, consumerProperties, consumer, new ConsumerRebalanceListener() {
+            @Override
+            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                log.warn("revoked partitions {}", partitions.toString());
+            }
+
+            @Override
+            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                log.info("assigned partitions {}", partitions.toString());
+            }
+
+            @Override
+            public void onPartitionsLost(Collection<TopicPartition> partitions) {
+                log.info("lost partitions {}", partitions.toString());
+            }
+        });
     }
 
     public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
@@ -67,11 +64,13 @@ public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
         this.consumer = consumer;
         this.consumerRebalanceListener = consumerRebalanceListener == null ? new NoOpConsumerRebalanceListener() : consumerRebalanceListener;
         this.pollExecutor = getKafkaPollExecutor(this.name);
+
+        this.subscribe(null);
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.subscribe(null);
+        log.info("kafka consumer named [{}] init with {}", this.name, this.consumerProperties);
     }
 
     private void subscribe(ThreadPoolExecutor threadPoolExecutor) {

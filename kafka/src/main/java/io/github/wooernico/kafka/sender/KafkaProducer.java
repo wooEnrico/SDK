@@ -3,6 +3,8 @@ package io.github.wooernico.kafka.sender;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.DisposableBean;
 
@@ -11,17 +13,19 @@ import java.util.concurrent.Future;
 
 public class KafkaProducer<K, V> implements InitializingBean, DisposableBean {
 
+    private static final Logger log = LoggerFactory.getLogger(KafkaProducer.class);
     private final Properties properties;
 
-    private org.apache.kafka.clients.producer.KafkaProducer<K, V> kafkaProducer;
+    private final org.apache.kafka.clients.producer.KafkaProducer<K, V> kafkaProducer;
 
     public KafkaProducer(Properties properties) {
         this.properties = properties;
+        this.kafkaProducer = new org.apache.kafka.clients.producer.KafkaProducer<K, V>(this.properties);
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.kafkaProducer = new org.apache.kafka.clients.producer.KafkaProducer<K, V>(this.properties);
+        log.info("kafka producer init with {}", this.properties);
     }
 
     /**

@@ -7,11 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.*;
 import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
 import reactor.kafka.sender.SenderRecord;
@@ -27,44 +23,42 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
 
     private final SenderProperties properties;
     private final ConcurrentHashMap<Thread, Disposable> subscribeMap = new ConcurrentHashMap<>(512);
-    private ThreadLocal<Sinks.Many<SenderRecord<K, V, T>>> threadLocal;
-    private reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
-    private Consumer<SenderResult<T>> senderResultConsumer;
-    private Scheduler senderResultScheduler = Schedulers.boundedElastic();
+    private final ThreadLocal<Sinks.Many<SenderRecord<K, V, T>>> threadLocal;
+    private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
+    private final Consumer<SenderResult<T>> senderResultConsumer;
 
     public ReactorKafkaSender(SenderProperties properties) {
-        this.properties = properties;
+        this(properties, null);
     }
 
     public ReactorKafkaSender(SenderProperties properties, Consumer<SenderResult<T>> senderResultConsumer) {
         this.properties = properties;
         this.senderResultConsumer = senderResultConsumer;
-    }
-
-    public ReactorKafkaSender(SenderProperties properties, Consumer<SenderResult<T>> senderResultConsumer, Scheduler senderResultScheduler) {
-        this.properties = properties;
-        this.senderResultConsumer = senderResultConsumer;
-        this.senderResultScheduler = senderResultScheduler;
+        this.kafkaSender = this.createKafkaSender(this.properties);
+        this.threadLocal = ThreadLocal.withInitial(() -> this.getSenderRecordSinks(this.properties));
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.kafkaSender = this.createKafkaSender(this.properties);
-        this.threadLocal = ThreadLocal.withInitial(() -> {
-            Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast()
-                    .onBackpressureBuffer(new LinkedBlockingQueue<>(this.properties.getQueueSize()));
-            log.info("reactor kafka new sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
-            Disposable subscribe = this.send(senderRecordMany.asFlux().doOnSubscribe(subscription -> {
-                log.info("reactor kafka subscribe sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
-            })).publishOn(this.senderResultScheduler).flatMap(this::handleSenderResult).subscribe();
-            this.subscribeMap.put(Thread.currentThread(), subscribe);
-            return senderRecordMany;
-        });
+        log.info("reactor kafka sender init with {}", this.properties);
+    }
+
+    private Sinks.Many<SenderRecord<K, V, T>> getSenderRecordSinks(SenderProperties properties) {
+        LinkedBlockingQueue<SenderRecord<K, V, T>> queue = new LinkedBlockingQueue<>(properties.getQueueSize());
+        Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast().onBackpressureBuffer(queue);
+        log.info("reactor kafka new sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
+
+        Disposable subscribe = this.send(senderRecordMany.asFlux().doOnSubscribe(subscription -> {
+            log.info("reactor kafka subscribe sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
+        })).subscribe(this::handleSenderResult);
+        this.subscribeMap.put(Thread.currentThread(), subscribe);
+
+        return senderRecordMany;
     }
 
     private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties) {
-
         SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.getProperties())
+                .stopOnError(false)
                 .closeTimeout(properties.getCloseTimeout());
 
         return KafkaSender.create(senderOptions);
@@ -151,10 +145,10 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
 
         log.warn("reactor kafka sinks emit fail for {}", emitResult);
 
-        return this.send(Flux.just(senderRecord))
-                .publishOn(senderResultScheduler)
-                .flatMap(this::handleSenderResult)
-                .then();
+        return Mono.defer(() -> {
+            this.send(Mono.just(senderRecord)).subscribe(this::handleSenderResult);
+            return Mono.empty();
+        });
     }
 
     /**
@@ -206,12 +200,10 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
      * 处理
      *
      * @param objectSenderResult
-     * @return
      */
-    private Mono<Void> handleSenderResult(SenderResult<T> objectSenderResult) {
+    private void handleSenderResult(SenderResult<T> objectSenderResult) {
         if (this.senderResultConsumer != null) {
             this.senderResultConsumer.accept(objectSenderResult);
         }
-        return Mono.empty();
     }
 }
