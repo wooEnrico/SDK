@@ -22,8 +22,7 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
     private static final Logger log = LoggerFactory.getLogger(ReactorKafkaSender.class);
 
     private final SenderProperties properties;
-    private final ConcurrentHashMap<Thread, Disposable> subscribeMap = new ConcurrentHashMap<>(512);
-    private final ThreadLocal<Sinks.Many<SenderRecord<K, V, T>>> threadLocal;
+    private final ConcurrentHashMap<Thread, SinksSendToKafkaSubscriber<K, V, T>> subscribeMap = new ConcurrentHashMap<>(512);
     private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
     private final Consumer<SenderResult<T>> senderResultConsumer;
 
@@ -35,7 +34,6 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
         this.properties = properties;
         this.senderResultConsumer = senderResultConsumer;
         this.kafkaSender = this.createKafkaSender(this.properties);
-        this.threadLocal = ThreadLocal.withInitial(() -> this.getSenderRecordSinks(this.properties));
     }
 
     @Override
@@ -43,17 +41,11 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
         log.info("reactor kafka sender init with {}", this.properties);
     }
 
-    private Sinks.Many<SenderRecord<K, V, T>> getSenderRecordSinks(SenderProperties properties) {
+    private SinksSendToKafkaSubscriber<K, V, T> getSenderRecordSinks(SenderProperties properties) {
         LinkedBlockingQueue<SenderRecord<K, V, T>> queue = new LinkedBlockingQueue<>(properties.getQueueSize());
         Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast().onBackpressureBuffer(queue);
         log.info("reactor kafka new sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
-
-        Disposable subscribe = this.send(senderRecordMany.asFlux().doOnSubscribe(subscription -> {
-            log.info("reactor kafka subscribe sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
-        })).subscribe(this::handleSenderResult);
-        this.subscribeMap.put(Thread.currentThread(), subscribe);
-
-        return senderRecordMany;
+        return new SinksSendToKafkaSubscriber<>(this.kafkaSender, senderRecordMany, this.senderResultConsumer);
     }
 
     private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties) {
@@ -164,9 +156,10 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
 
     private Sinks.EmitResult emitToSinks(SenderRecord<K, V, T> senderRecord) {
 
-        Sinks.Many<SenderRecord<K, V, T>> sinks = threadLocal.get();
+        SinksSendToKafkaSubscriber<K, V, T> subscriber = this.subscribeMap.computeIfAbsent(Thread.currentThread(),
+                thread -> this.getSenderRecordSinks(this.properties));
 
-        Sinks.EmitResult emitResult = sinks.tryEmitNext(senderRecord);
+        Sinks.EmitResult emitResult = subscriber.tryEmitNext(senderRecord);
 
         if (emitResult.isSuccess()) {
             return emitResult;
@@ -175,12 +168,9 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
         if (Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER.equals(emitResult)
                 || Sinks.EmitResult.FAIL_TERMINATED.equals(emitResult)
                 || Sinks.EmitResult.FAIL_CANCELLED.equals(emitResult)) {
-
-            log.warn("reactor kafka remove sinks for {}, {}", emitResult, sinks.hashCode());
-            this.threadLocal.remove();
-            Disposable disposable = this.subscribeMap.remove(Thread.currentThread());
-            if (disposable != null && !disposable.isDisposed()) {
-                disposable.dispose();
+            SinksSendToKafkaSubscriber<K, V, T> remove = this.subscribeMap.remove(Thread.currentThread());
+            if (remove != null) {
+                remove.dispose();
             }
         }
 
@@ -189,11 +179,7 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
 
     @Override
     public void destroy() throws Exception {
-        this.subscribeMap.entrySet().stream()
-                .filter(entry -> !entry.getValue().isDisposed())
-                .forEach(entry -> {
-                    entry.getValue().dispose();
-                });
+        this.subscribeMap.forEach((key, value) -> value.dispose());
     }
 
     /**
@@ -204,6 +190,36 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
     private void handleSenderResult(SenderResult<T> objectSenderResult) {
         if (this.senderResultConsumer != null) {
             this.senderResultConsumer.accept(objectSenderResult);
+        }
+    }
+
+    static class SinksSendToKafkaSubscriber<K, V, T> implements Disposable {
+        private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
+        private final Sinks.Many<SenderRecord<K, V, T>> sinks;
+        private final Consumer<SenderResult<T>> senderResultConsumer;
+        private final Disposable subscriber;
+
+        public SinksSendToKafkaSubscriber(KafkaSender<K, V> kafkaSender, Sinks.Many<SenderRecord<K, V, T>> sinks, Consumer<SenderResult<T>> senderResultConsumer) {
+            this.kafkaSender = kafkaSender;
+            this.sinks = sinks;
+            this.senderResultConsumer = senderResultConsumer;
+
+            this.subscriber = this.kafkaSender.send(this.sinks.asFlux()).subscribe(senderResult -> {
+                if (this.senderResultConsumer != null) {
+                    this.senderResultConsumer.accept(senderResult);
+                }
+            });
+        }
+
+        public Sinks.EmitResult tryEmitNext(SenderRecord<K, V, T> senderRecord) {
+            return this.sinks.tryEmitNext(senderRecord);
+        }
+
+        @Override
+        public void dispose() {
+            if (this.subscriber != null && !this.subscriber.isDisposed()) {
+                this.subscriber.dispose();
+            }
         }
     }
 }
