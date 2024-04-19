@@ -1,11 +1,10 @@
 package io.github.wooernico.kafka.sender;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serializer;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import reactor.core.Disposable;
 import reactor.core.publisher.*;
 import reactor.kafka.sender.KafkaSender;
@@ -17,117 +16,47 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-public class ReactorKafkaSender<K, V, T> implements InitializingBean, DisposableBean {
+public abstract class ReactorKafkaSender<K, V, T> implements Disposable {
 
-    private static final Logger log = LoggerFactory.getLogger(ReactorKafkaSender.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultKafkaProducer.class);
 
-    private final SenderProperties properties;
+    protected final SenderProperties properties;
+    protected final Serializer<K> keySerializer;
+    protected final Serializer<V> valueSerializer;
+
     private final ConcurrentHashMap<Thread, SinksSendToKafkaSubscriber<K, V, T>> subscribeMap = new ConcurrentHashMap<>(512);
     private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
     private final Consumer<SenderResult<T>> senderResultConsumer;
 
-    public ReactorKafkaSender(SenderProperties properties) {
-        this(properties, null);
+    public ReactorKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        this(properties, keySerializer, valueSerializer, null);
     }
 
-    public ReactorKafkaSender(SenderProperties properties, Consumer<SenderResult<T>> senderResultConsumer) {
+    public ReactorKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer, Consumer<SenderResult<T>> senderResultConsumer) {
         this.properties = properties;
         this.senderResultConsumer = senderResultConsumer;
-        this.kafkaSender = this.createKafkaSender(this.properties);
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
+
+        this.kafkaSender = this.createKafkaSender(this.properties, this.keySerializer, this.valueSerializer);
     }
+
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        log.info("reactor kafka sender init with {}", this.properties);
-    }
-
-    private SinksSendToKafkaSubscriber<K, V, T> getSenderRecordSinks(SenderProperties properties) {
-        LinkedBlockingQueue<SenderRecord<K, V, T>> queue = new LinkedBlockingQueue<>(properties.getQueueSize());
-        Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast().onBackpressureBuffer(queue);
-        log.info("reactor kafka new sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
-        return new SinksSendToKafkaSubscriber<>(this.kafkaSender, senderRecordMany, this.senderResultConsumer);
-    }
-
-    private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties) {
-        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.getProperties())
-                .stopOnError(false)
-                .closeTimeout(properties.getCloseTimeout());
-
-        return KafkaSender.create(senderOptions);
+    public void dispose() {
+        this.subscribeMap.forEach((key, value) -> value.dispose());
     }
 
     /**
-     * 缓冲队列写入
+     * 提交队列失败，直接写入
      *
-     * @param topic 主题topic
-     * @param value 数据
-     * @return 队列写入结果
+     * @param producerRecord 生产者记录
+     * @param object         返回数据
+     * @return 提交结果
      */
-    public Sinks.EmitResult emit(String topic, V value) {
-        return this.emit(topic, null, value);
-    }
+    public Mono<Void> send(ProducerRecord<K, V> producerRecord, T object) {
 
-    /**
-     * 缓冲队列写入
-     *
-     * @param topic 主题topic
-     * @param key   分区key
-     * @param value 数据
-     * @return 队列写入结果
-     */
-    public Sinks.EmitResult emit(String topic, K key, V value) {
-        return this.emit(topic, key, value, null);
-    }
-
-    /**
-     * 缓冲队列写入
-     *
-     * @param topic  主题topic
-     * @param key    分区key
-     * @param value  数据
-     * @param object 发送记录meta
-     * @return 队列写入结果
-     */
-    public Sinks.EmitResult emit(String topic, K key, V value, T object) {
-        SenderRecord<K, V, T> senderRecord = SenderRecord.create(new ProducerRecord<>(topic, key, value), object);
-        return this.emitToSinks(senderRecord);
-    }
-
-    /**
-     * 缓冲队列写入
-     *
-     * @param topic 主题topic
-     * @param value 数据
-     * @return Mono
-     */
-    public Mono<Void> send(String topic, V value) {
-        return this.send(topic, null, value);
-    }
-
-    /**
-     * 缓冲队列写入
-     *
-     * @param topic 主题topic
-     * @param key   分区key
-     * @param value 数据
-     * @return Mono
-     */
-    public Mono<Void> send(String topic, K key, V value) {
-        return this.send(topic, key, value, null);
-    }
-
-    /**
-     * 缓冲队列写入
-     *
-     * @param topic  主题topic
-     * @param key    分区key
-     * @param value  数据
-     * @param object 发送记录meta
-     * @return Mono
-     */
-    public Mono<Void> send(String topic, K key, V value, T object) {
-
-        SenderRecord<K, V, T> senderRecord = SenderRecord.create(new ProducerRecord<K, V>(topic, key, value), object);
+        SenderRecord<K, V, T> senderRecord = SenderRecord.create(producerRecord, object);
 
         Sinks.EmitResult emitResult = this.emitToSinks(senderRecord);
 
@@ -138,9 +67,23 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
         log.warn("reactor kafka sinks emit fail for {}", emitResult);
 
         return Mono.defer(() -> {
-            this.send(Mono.just(senderRecord)).subscribe(this::handleSenderResult);
+            this.send(senderRecord).subscribe(senderResult -> {
+                if (this.senderResultConsumer != null) {
+                    this.senderResultConsumer.accept(senderResult);
+                }
+            });
             return Mono.empty();
         });
+    }
+
+    /**
+     * kafka 直接写入
+     *
+     * @param senderRecord 发送记录
+     * @return 发送结果
+     */
+    public Flux<SenderResult<T>> send(SenderRecord<K, V, T> senderRecord) {
+        return this.send(Mono.just(senderRecord));
     }
 
     /**
@@ -156,8 +99,7 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
 
     private Sinks.EmitResult emitToSinks(SenderRecord<K, V, T> senderRecord) {
 
-        SinksSendToKafkaSubscriber<K, V, T> subscriber = this.subscribeMap.computeIfAbsent(Thread.currentThread(),
-                thread -> this.getSenderRecordSinks(this.properties));
+        SinksSendToKafkaSubscriber<K, V, T> subscriber = getKvtSinksSendToKafkaSubscriber();
 
         Sinks.EmitResult emitResult = subscriber.tryEmitNext(senderRecord);
 
@@ -177,20 +119,23 @@ public class ReactorKafkaSender<K, V, T> implements InitializingBean, Disposable
         return emitResult;
     }
 
-    @Override
-    public void destroy() throws Exception {
-        this.subscribeMap.forEach((key, value) -> value.dispose());
+    private SinksSendToKafkaSubscriber<K, V, T> getKvtSinksSendToKafkaSubscriber() {
+        return this.subscribeMap.computeIfAbsent(Thread.currentThread(), thread -> {
+            LinkedBlockingQueue<SenderRecord<K, V, T>> queue = new LinkedBlockingQueue<>(properties.getQueueSize());
+            Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast().onBackpressureBuffer(queue);
+            log.info("reactor kafka new sinks for {}, {}", Thread.currentThread().getName(), senderRecordMany.hashCode());
+            return new SinksSendToKafkaSubscriber<>(this.kafkaSender, senderRecordMany, this.senderResultConsumer);
+        });
     }
 
-    /**
-     * 处理
-     *
-     * @param objectSenderResult
-     */
-    private void handleSenderResult(SenderResult<T> objectSenderResult) {
-        if (this.senderResultConsumer != null) {
-            this.senderResultConsumer.accept(objectSenderResult);
-        }
+    private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
+        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.getProperties())
+                .withKeySerializer(keySerializer)
+                .withValueSerializer(valueSerializer)
+                .stopOnError(false)
+                .closeTimeout(properties.getCloseTimeout());
+
+        return KafkaSender.create(senderOptions);
     }
 
     static class SinksSendToKafkaSubscriber<K, V, T> implements Disposable {

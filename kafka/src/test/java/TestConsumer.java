@@ -1,8 +1,4 @@
-import io.github.wooernico.kafka.consumer.ConsumerProperties;
-import io.github.wooernico.kafka.consumer.KafkaConsumer;
-import io.github.wooernico.kafka.consumer.ReactorKafkaReceiver;
-import io.github.wooernico.kafka.handler.KafkaHandler;
-import io.github.wooernico.kafka.handler.ReactorKafkaHandler;
+import io.github.wooernico.kafka.consumer.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
@@ -25,7 +21,7 @@ public class TestConsumer {
 
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        KafkaConsumer<String, String> test = new KafkaConsumer<String, String>("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
+        DefaultKafkaConsumer test = new DefaultKafkaConsumer("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
             @Override
             public void accept(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 log.info("{}", stringStringConsumerRecord.value());
@@ -42,7 +38,7 @@ public class TestConsumer {
 
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        ReactorKafkaReceiver<String, String> test2 = new ReactorKafkaReceiver<String, String>("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
+        DefaultReactorKafkaReceiver test2 = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
             @Override
             public Mono<Void> apply(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 log.info("{}", stringStringConsumerRecord.value());

@@ -1,5 +1,5 @@
-import io.github.wooernico.kafka.sender.KafkaProducer;
-import io.github.wooernico.kafka.sender.ReactorKafkaSender;
+import io.github.wooernico.kafka.sender.DefaultKafkaProducer;
+import io.github.wooernico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooernico.kafka.sender.SenderProperties;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -29,12 +29,13 @@ public class TestSender {
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
         SenderProperties senderProperties = getSenderProperties();
-        ReactorKafkaSender<String, String, Object> reactorKafkaSender = new ReactorKafkaSender<String, String, Object>(senderProperties, objectSenderResult -> {
+        DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, producerRecordSenderResult -> {
             countDownLatch.countDown();
-            if (objectSenderResult.exception() != null) {
-                log.error("send error", objectSenderResult.exception());
+            if (producerRecordSenderResult.exception() != null) {
+                log.error("send error {}", producerRecordSenderResult.correlationMetadata(), producerRecordSenderResult.exception());
+            } else {
+                log.info("send complete {}", producerRecordSenderResult.correlationMetadata());
             }
-            log.info("send complete {}", objectSenderResult.recordMetadata());
         });
         reactorKafkaSender.afterPropertiesSet();
 
@@ -53,7 +54,7 @@ public class TestSender {
 
         SenderProperties senderProperties = getSenderProperties();
 
-        KafkaProducer<String, String> kafkaProducer = new KafkaProducer<String, String>(senderProperties.getProperties());
+        DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.getProperties());
         kafkaProducer.afterPropertiesSet();
         for (int i = 0; i < count; i++) {
             kafkaProducer.send("test", i + "", new Callback() {
@@ -62,8 +63,9 @@ public class TestSender {
                     countDownLatch.countDown();
                     if (exception != null) {
                         log.error("send error", exception);
+                    } else {
+                        log.info("send complete {}", metadata);
                     }
-                    log.info("send complete {}", metadata);
                 }
             });
 

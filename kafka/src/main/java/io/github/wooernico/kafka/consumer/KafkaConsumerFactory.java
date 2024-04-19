@@ -1,9 +1,7 @@
 package io.github.wooernico.kafka.consumer;
 
 import io.github.wooernico.kafka.configuration.KafkaProperties;
-import io.github.wooernico.kafka.handler.IKafkaHandler;
-import io.github.wooernico.kafka.handler.KafkaHandler;
-import io.github.wooernico.kafka.handler.ReactorKafkaHandler;
+import io.github.wooernico.kafka.handler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -52,17 +50,17 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
                     this.applicationContext.getBean(key, IKafkaHandler.class);
 
             if (handler instanceof KafkaHandler) {
-                KafkaHandler kafkaHandler = (KafkaHandler) handler;
+                DefaultKafkaHandler kafkaHandler = (DefaultKafkaHandler) handler;
                 for (int i = 0; i < properties.getConcurrency(); i++) {
-                    KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<String, String>(key + i, properties, kafkaHandler);
+                    DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, kafkaHandler);
                     kafkaConsumer.afterPropertiesSet();
                     this.disposableBeans.add(kafkaConsumer);
                 }
 
             } else if (handler instanceof ReactorKafkaHandler) {
-                ReactorKafkaHandler reactorKafkaHandler = (ReactorKafkaHandler) handler;
+                DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
                 for (int i = 0; i < properties.getConcurrency(); i++) {
-                    ReactorKafkaReceiver<String, String> reactorKafkaReceiver = new ReactorKafkaReceiver<String, String>(key + i, properties, reactorKafkaHandler);
+                    DefaultReactorKafkaReceiver reactorKafkaReceiver = new DefaultReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
                     reactorKafkaReceiver.afterPropertiesSet();
                     this.disposableBeans.add(reactorKafkaReceiver);
                 }

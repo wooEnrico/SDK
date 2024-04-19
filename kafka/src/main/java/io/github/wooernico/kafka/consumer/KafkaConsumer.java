@@ -8,10 +8,9 @@ import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
+import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -19,24 +18,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
+public abstract class KafkaConsumer<K, V> implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
-    private final String name;
-
-    private final ConsumerProperties consumerProperties;
-
-    private final Consumer<ConsumerRecord<K, V>> consumer;
+    protected final String name;
+    protected final ConsumerProperties consumerProperties;
+    protected final Consumer<ConsumerRecord<K, V>> consumer;
 
     private final Map<ThreadPoolExecutor, org.apache.kafka.clients.consumer.KafkaConsumer<K, V>> subscribers = new ConcurrentHashMap<>();
-
     private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
-
     private final AtomicBoolean close = new AtomicBoolean(false);
-
     private final Executor pollExecutor;
-
     private final ConsumerRebalanceListener consumerRebalanceListener;
 
     public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer) {
@@ -69,8 +62,11 @@ public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        log.info("kafka consumer named [{}] init with {}", this.name, this.consumerProperties);
+    public void close() {
+        this.close.set(true);
+        this.subscribers.forEach((threadPoolExecutor, kafkaConsumer) -> {
+            threadPoolExecutor.shutdown();
+        });
     }
 
     private void subscribe(ThreadPoolExecutor threadPoolExecutor) {
@@ -117,14 +113,6 @@ public class KafkaConsumer<K, V> implements InitializingBean, DisposableBean {
             }
         }
         kafkaConsumer.close();
-    }
-
-    @Override
-    public void destroy() throws Exception {
-        this.close.set(true);
-        this.subscribers.forEach((threadPoolExecutor, kafkaConsumer) -> {
-            threadPoolExecutor.shutdown();
-        });
     }
 
     private Executor getKafkaPollExecutor(String name) {
