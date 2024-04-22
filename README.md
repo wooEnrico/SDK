@@ -13,3 +13,5 @@
 * [kafka](https://github.com/wooEnrico/SDK/blob/master/kafka/README.md)
 * [kafka-spring-boot-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/kafka-spring-boot-starter/README.md)
 * [kafka-spring-boot3-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/kafka-spring-boot3-starter/README.md)
+* [spring-boot-data-redis](https://github.com/wooEnrico/SDK/blob/master/spring-boot-data-redis/README.md)
+* [spring-boot3-data-redis](https://github.com/wooEnrico/SDK/blob/master/spring-boot3-data-redis/README.md)
