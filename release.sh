@@ -14,8 +14,8 @@ function release() {
   git add .
   git commit --message "Snapshot for $SNAPSHOT"
 
-#  git push git@github.com:wooEnrico/SDK.git master
-#  git push git@github.com:wooEnrico/SDK.git --tags
+  git push git@github.com:wooEnrico/SDK.git master
+  git push git@github.com:wooEnrico/SDK.git v$RELEASE
 }
 
 echo "Release Version: "

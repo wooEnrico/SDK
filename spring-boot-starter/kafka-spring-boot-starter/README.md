@@ -5,59 +5,13 @@
 you can use in spring boot 2.x
 
 ```xml
-
 <dependencies>
-
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>kafka-spring-boot-starter</artifactId>
         <version>1.0.1</version>
     </dependency>
-
-    <dependency>
-        <groupId>org.apache.kafka</groupId>
-        <artifactId>kafka-clients</artifactId>
-        <version>3.0.0</version>
-    </dependency>
-
-    <dependency>
-        <groupId>io.projectreactor.kafka</groupId>
-        <artifactId>reactor-kafka</artifactId>
-        <version>1.3.19</version>
-    </dependency>
-
-    <dependency>
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>3.4.25</version>
-    </dependency>
-
 </dependencies>
-```
-
-## spring boot application import
-
-```
-@AutoKafka
-```
-
-### example
-
-```java
-
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-
-@SpringBootApplication
-@AutoKafka
-public class MyApplication {
-    public static void main(String[] args) {
-        new SpringApplicationBuilder(MyApplication.class)
-                .web(WebApplicationType.NONE)
-                .run(args);
-    }
-}
 ```
 
 ## consumer handler implements

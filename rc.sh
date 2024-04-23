@@ -8,7 +8,7 @@ function rc() {
   mvn test
   mvn clean
   mvn deploy
-  git push git@github.com:wooEnrico/SDK.git --tags
+  git push git@github.com:wooEnrico/SDK.git v$RC
   git checkout .
 }
 

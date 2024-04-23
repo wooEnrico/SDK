@@ -6,33 +6,12 @@ spring boot version = 2.7.12
 ## dependency
 
 ```xml
-
 <dependencies>
-
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-data-redis</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.2.RC0</version>
     </dependency>
-
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-redis</artifactId>
-        <version>2.7.12</version>
-    </dependency>
-
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
-        <version>2.7.12</version>
-    </dependency>
-
-    <dependency>
-        <groupId>redis.clients</groupId>
-        <artifactId>jedis</artifactId>
-        <version>3.8.0</version>
-    </dependency>
-
 </dependencies>
 ```
 
