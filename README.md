@@ -1,7 +1,7 @@
 # USEAGE
 
-java version >= 8
-spring boot version = 2.7.5
+java version >= 17
+spring boot version = 3.1.2
 
 ## dependency
 
@@ -10,7 +10,7 @@ spring boot version = 2.7.5
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-data-redis</artifactId>
-        <version>2.7.5</version>
+        <version>3.1.2</version>
     </dependency>
 </dependencies>
 ```
@@ -23,7 +23,8 @@ import io.github.wooenrico.redis.LettuceConnectionConfiguration;
 import io.github.wooenrico.redis.JedisConnectionConfiguration;
 
 @Configuration
-public class RedisConfiguration {
+public class AutoRedisConfiguration {
+
 
     @Bean
     @ConfigurationProperties(prefix = "redis.test")
@@ -32,10 +33,10 @@ public class RedisConfiguration {
     }
 
     @Bean
-    public RedisConnectionFactory testRedisConnectionFactory(@Qualifier("testRedisProperties") RedisProperties redisProperties) {
+    public RedisConnectionFactory testRedisConnectionFactory(@Qualifier("testRedisProperties") RedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
         return RedisProperties.ClientType.LETTUCE.equals(redisProperties.getClientType()) ?
-                new LettuceConnectionConfiguration(redisProperties).createRedisConnectionFactory()
-                : new JedisConnectionConfiguration(redisProperties).createRedisConnectionFactory();
+                new LettuceConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory()
+                : new JedisConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory();
     }
 
     @Bean
@@ -50,8 +51,8 @@ public class RedisConfiguration {
     }
 
     @Bean
-    public LettuceConnectionFactory test2RedisConnectionFactory(@Qualifier("test2RedisProperties") RedisProperties redisProperties) {
-        return new LettuceConnectionConfiguration(redisProperties).createRedisConnectionFactory();
+    public LettuceConnectionFactory test2RedisConnectionFactory(@Qualifier("test2RedisProperties") RedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
+        return new LettuceConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory();
     }
 
     @Bean
@@ -65,7 +66,7 @@ public class RedisConfiguration {
 
 ```java
 
-@SpringBootApplication(exclude = {RedisAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class})
+@SpringBootApplication(exclude = {RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class, RedisRepositoriesAutoConfiguration.class})
 public class MyApplication {
     public static void main(String[] args) {
         new SpringApplicationBuilder(MyApplication.class)
@@ -89,7 +90,19 @@ redis.test1.password=
 redis.test2.cluster.nodes=127.0.0.1:7001,127.0.0.1:7002,127.0.0.1:7003
 redis.test2.password=
 redis.test2.clientType=LETTUCE
+redis.test2.ssl.enabled=true
+redis.test2.ssl.bundle=mybundle
 ########################################################################################################################
 ## TODO END redis configuration
 ########################################################################################################################
+## spring boot 3.0 SSL
+## https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.ssl
+spring.ssl.bundle.jks.mybundle.keystore.location=classpath:application.p12
+spring.ssl.bundle.jks.mybundle.keystore.password=secret
+spring.ssl.bundle.jks.mybundle.keystore.type=PKCS12
+spring.ssl.bundle.jks.mybundle.truststore.location=classpath:server.p12
+spring.ssl.bundle.jks.mybundle.truststore.password=secret
+spring.ssl.bundle.pem.mybundle2.keystore.certificate=classpath:application.crt
+spring.ssl.bundle.pem.mybundle2.keystore.private-key=classpath:application.key
+spring.ssl.bundle.pem.mybundle2.truststore.certificate=classpath:server.crt
 ```

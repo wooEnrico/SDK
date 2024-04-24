@@ -1,6 +1,7 @@
 package io.github.wooenrico.redis;
 
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.data.redis.connection.*;
 import org.springframework.util.StringUtils;
 
@@ -10,9 +11,11 @@ import java.util.stream.Collectors;
 public abstract class RedisConnectionConfiguration {
 
     protected final RedisProperties properties;
+    protected final SslBundles sslBundles;
 
-    public RedisConnectionConfiguration(RedisProperties properties) {
+    public RedisConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
         this.properties = properties;
+        this.sslBundles = sslBundles;
     }
 
     protected final RedisStandaloneConfiguration getStandaloneConfig() {

@@ -2,12 +2,15 @@ package io.github.wooenrico.redis;
 
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
+import io.lettuce.core.SslOptions;
 import io.lettuce.core.TimeoutOptions;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.resource.ClientResources;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
@@ -18,7 +21,11 @@ import org.springframework.util.StringUtils;
 public class LettuceConnectionConfiguration extends RedisConnectionConfiguration {
 
     public LettuceConnectionConfiguration(RedisProperties properties) {
-        super(properties);
+        super(properties, null);
+    }
+
+    public LettuceConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
+        super(properties, sslBundles);
     }
 
     @Override
@@ -47,6 +54,7 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
     }
 
     private LettuceClientConfiguration getLettuceClientConfiguration(ClientResources clientResources, RedisProperties.Pool pool) {
+
         LettuceClientConfiguration.LettuceClientConfigurationBuilder builder;
         // pool or not
         if (pool != null && pool.getEnabled() != null && pool.getEnabled()) {
@@ -68,13 +76,13 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
             builder.shutdownTimeout(this.properties.getLettuce().getShutdownTimeout());
         }
         // ssl
-        if (this.properties.isSsl()) {
+        if (this.properties.getSsl().isEnabled()) {
             builder.useSsl();
         }
         if (StringUtils.hasText(this.properties.getUrl()) && this.urlUsesSsl()) {
             builder.useSsl();
         }
-        // client options (timeout、connectTimeout、refresh)
+        // client options (ssl、timeout、connectTimeout、refresh)
         ClientOptions clientOptions = this.createClientOptions();
         if (clientOptions != null) {
             builder.clientOptions(clientOptions);
@@ -83,13 +91,14 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
     }
 
     private ClientOptions createClientOptions() {
-        ClientOptions.Builder builder = ClientOptions.builder();
+        io.lettuce.core.ClientOptions.Builder builder = ClientOptions.builder();
+        // cluster or not
         if (this.properties.getCluster() != null) {
             ClusterClientOptions.Builder cluster = ClusterClientOptions.builder();
             RedisProperties.Lettuce.Cluster.Refresh refreshProperties = this.properties.getLettuce().getCluster().getRefresh();
             ClusterTopologyRefreshOptions.Builder refreshBuilder = ClusterTopologyRefreshOptions.builder().dynamicRefreshSources(refreshProperties.isDynamicRefreshSources());
             if (refreshProperties.getPeriod() != null) {
-                refreshBuilder.enablePeriodicRefresh(refreshProperties.getPeriod());
+                refreshBuilder.refreshPeriod(refreshProperties.getPeriod());
             }
             if (refreshProperties.isAdaptive()) {
                 refreshBuilder.enableAllAdaptiveRefreshTriggers();
@@ -100,8 +109,24 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         if (this.properties.getConnectTimeout() != null) {
             builder.socketOptions(SocketOptions.builder().connectTimeout(this.properties.getConnectTimeout()).build());
         }
+        // ssl
+        if (this.properties.getSsl().isEnabled() && this.properties.getSsl().getBundle() != null) {
+            SslBundle sslBundle = this.sslBundles.getBundle(this.properties.getSsl().getBundle());
+            io.lettuce.core.SslOptions.Builder sslOptionsBuilder = SslOptions.builder();
+            sslOptionsBuilder.keyManager(sslBundle.getManagers().getKeyManagerFactory());
+            sslOptionsBuilder.trustManager(sslBundle.getManagers().getTrustManagerFactory());
+            org.springframework.boot.ssl.SslOptions sslOptions = sslBundle.getOptions();
+            if (sslOptions.getCiphers() != null) {
+                sslOptionsBuilder.cipherSuites(sslOptions.getCiphers());
+            }
+            if (sslOptions.getEnabledProtocols() != null) {
+                sslOptionsBuilder.protocols(sslOptions.getEnabledProtocols());
+            }
+            builder.sslOptions(sslOptionsBuilder.build());
+        }
         return builder.timeoutOptions(TimeoutOptions.enabled()).build();
     }
+
 
     private GenericObjectPoolConfig<?> getPoolConfig(RedisProperties.Pool properties) {
         GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();

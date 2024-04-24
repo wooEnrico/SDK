@@ -1,6 +1,9 @@
 package io.github.wooenrico.redis;
 
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslBundles;
+import org.springframework.boot.ssl.SslOptions;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
@@ -8,10 +11,16 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.util.StringUtils;
 import redis.clients.jedis.JedisPoolConfig;
 
+import javax.net.ssl.SSLParameters;
+
 public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
 
     public JedisConnectionConfiguration(RedisProperties properties) {
-        super(properties);
+        super(properties, null);
+    }
+
+    public JedisConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
+        super(properties, sslBundles);
     }
 
     @Override
@@ -54,8 +63,22 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
             }
         }
         // ssl
-        if (this.properties.isSsl()) {
-            builder.useSsl();
+        if (this.properties.getSsl().isEnabled()) {
+            JedisClientConfiguration.JedisSslClientConfigurationBuilder sslBuilder = builder.useSsl();
+            if (this.properties.getSsl().getBundle() != null) {
+                SslBundle sslBundle = this.sslBundles.getBundle(this.properties.getSsl().getBundle());
+                sslBuilder.sslSocketFactory(sslBundle.createSslContext().getSocketFactory());
+                SslOptions sslOptions = sslBundle.getOptions();
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (sslOptions.getCiphers() != null) {
+                    sslParameters.setCipherSuites(sslOptions.getCiphers());
+                }
+                if (sslOptions.getEnabledProtocols() != null) {
+                    sslParameters.setProtocols(sslOptions.getEnabledProtocols());
+                }
+                sslBuilder.sslParameters(sslParameters);
+            }
         }
         if (StringUtils.hasText(this.properties.getUrl()) && this.urlUsesSsl()) {
             builder.useSsl();
