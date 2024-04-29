@@ -54,7 +54,7 @@ public class TestSender {
 
         SenderProperties senderProperties = getSenderProperties();
 
-        DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.getProperties());
+        DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.buildProperties());
         kafkaProducer.afterPropertiesSet();
         for (int i = 0; i < count; i++) {
             kafkaProducer.send("test", i + "", new Callback() {

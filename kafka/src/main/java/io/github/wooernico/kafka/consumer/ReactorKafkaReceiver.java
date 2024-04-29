@@ -99,7 +99,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
 
     private reactor.kafka.receiver.KafkaReceiver<K, V> createKafkaReceiver(ConsumerProperties properties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
 
-        ReceiverOptions<K, V> receiverOption = ReceiverOptions.<K, V>create(properties.getProperties())
+        ReceiverOptions<K, V> receiverOption = ReceiverOptions.<K, V>create(properties.buildProperties())
                 .withKeyDeserializer(keyDeserializer)
                 .withValueDeserializer(valueDeserializer)
                 .subscription(properties.getTopic())

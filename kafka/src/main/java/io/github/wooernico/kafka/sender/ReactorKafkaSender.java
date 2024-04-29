@@ -129,7 +129,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Disposable {
     }
 
     private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.getProperties())
+        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.buildProperties())
                 .withKeySerializer(keySerializer)
                 .withValueSerializer(valueSerializer)
                 .stopOnError(false)

@@ -77,7 +77,7 @@ public class ConsumerProperties {
     }
 
     public Properties getProperties() {
-        return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
+        return this.properties;
     }
 
     public void setProperties(Properties properties) {
@@ -126,5 +126,13 @@ public class ConsumerProperties {
 
     public void addProperties(String key, Object value) {
         this.properties.put(key, value);
+    }
+
+    public void addCommonProperties(Properties commonProperties) {
+        this.properties = KafkaUtil.mergeProperties(commonProperties, this.properties);
+    }
+
+    public Properties buildProperties() {
+        return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
     }
 }

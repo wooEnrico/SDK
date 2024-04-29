@@ -6,6 +6,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -25,6 +26,8 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
     protected final String name;
     protected final ConsumerProperties consumerProperties;
     protected final Consumer<ConsumerRecord<K, V>> consumer;
+    protected final Deserializer<K> keyDeserializer;
+    protected final Deserializer<V> valueDeserializer;
 
     private final Map<ThreadPoolExecutor, org.apache.kafka.clients.consumer.KafkaConsumer<K, V>> subscribers = new ConcurrentHashMap<>();
     private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
@@ -32,8 +35,8 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
     private final Executor pollExecutor;
     private final ConsumerRebalanceListener consumerRebalanceListener;
 
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer) {
-        this(name, consumerProperties, consumer, new ConsumerRebalanceListener() {
+    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
+        this(name, consumerProperties, consumer, keyDeserializer, valueDeserializer, new ConsumerRebalanceListener() {
             @Override
             public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
                 log.warn("revoked partitions {}", partitions.toString());
@@ -51,10 +54,12 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         });
     }
 
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         this.name = name;
         this.consumerProperties = consumerProperties;
         this.consumer = consumer;
+        this.keyDeserializer = keyDeserializer;
+        this.valueDeserializer = valueDeserializer;
         this.consumerRebalanceListener = consumerRebalanceListener == null ? new NoOpConsumerRebalanceListener() : consumerRebalanceListener;
         this.pollExecutor = getKafkaPollExecutor(this.name);
 
@@ -95,7 +100,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
         ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
 
-        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>((this.consumerProperties.getProperties()));
+        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>(this.consumerProperties.buildProperties(), this.keyDeserializer, this.valueDeserializer);
         kafkaConsumer.subscribe(this.consumerProperties.getTopic(), consumerRebalanceListener);
 
         this.subscribers.put(threadPoolExecutor, kafkaConsumer);

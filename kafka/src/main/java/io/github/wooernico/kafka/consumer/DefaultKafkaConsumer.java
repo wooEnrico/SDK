@@ -2,6 +2,7 @@ package io.github.wooernico.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -14,11 +15,11 @@ public class DefaultKafkaConsumer extends KafkaConsumer<String, String> implemen
     private static final Logger log = LoggerFactory.getLogger(DefaultKafkaConsumer.class);
 
     public DefaultKafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer) {
-        super(name, consumerProperties, consumer);
+        super(name, consumerProperties, consumer, new StringDeserializer(), new StringDeserializer());
     }
 
     public DefaultKafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
-        super(name, consumerProperties, consumer, consumerRebalanceListener);
+        super(name, consumerProperties, consumer, new StringDeserializer(), new StringDeserializer(), consumerRebalanceListener);
     }
 
     @Override
