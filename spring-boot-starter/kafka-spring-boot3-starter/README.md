@@ -9,7 +9,7 @@ you can use in spring boot 3.x
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>kafka-spring-boot3-starter</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </dependency>
 </dependencies>
 ```
