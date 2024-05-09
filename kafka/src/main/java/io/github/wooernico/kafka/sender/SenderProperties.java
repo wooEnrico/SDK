@@ -27,6 +27,21 @@ public class SenderProperties {
 
     private int queueSize = 100;
 
+    /**
+     * where there is no data emit for timeout, then remove the sinks
+     */
+    private Duration sinksEmitTimeout = Duration.ofSeconds(60);
+
+    /**
+     * sinks cache size
+     */
+    private long sinksCacheSize = 100L;
+
+    /**
+     * sinks cache clear up
+     */
+    private Duration sinksSubscribeAwait = Duration.ofSeconds(5);
+
     public Boolean getEnabled() {
         return enabled;
     }
@@ -57,6 +72,34 @@ public class SenderProperties {
 
     public void setQueueSize(int queueSize) {
         this.queueSize = queueSize;
+    }
+
+    public Properties getDefaultProperties() {
+        return defaultProperties;
+    }
+
+    public Duration getSinksEmitTimeout() {
+        return sinksEmitTimeout;
+    }
+
+    public void setSinksEmitTimeout(Duration sinksEmitTimeout) {
+        this.sinksEmitTimeout = sinksEmitTimeout;
+    }
+
+    public long getSinksCacheSize() {
+        return sinksCacheSize;
+    }
+
+    public void setSinksCacheSize(long sinksCacheSize) {
+        this.sinksCacheSize = sinksCacheSize;
+    }
+
+    public Duration getSinksSubscribeAwait() {
+        return sinksSubscribeAwait;
+    }
+
+    public void setSinksSubscribeAwait(Duration sinksSubscribeAwait) {
+        this.sinksSubscribeAwait = sinksSubscribeAwait;
     }
 
     @Override
