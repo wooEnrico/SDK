@@ -87,13 +87,13 @@ public class MyConfiguration {
     @Bean("testReactorKafkaSender")
     @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
     public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultReactorKafkaSender(kafkaProperties.getSender().get("test"));
+        return new DefaultReactorKafkaSender(kafkaProperties.getSenderProperties("test"));
     }
 
     @Bean("test2KafkaProducer")
     @ConditionalOnProperty(name = "kafka.sender.test2.enabled", matchIfMissing = false, havingValue = "true")
     public DefaultKafkaProducer reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultKafkaProducer(kafkaProperties.getSender().get("test2").getProperties());
+        return new DefaultKafkaProducer(kafkaProperties.getSenderProperties("test2").getProperties());
     }
 }
 ```

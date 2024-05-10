@@ -21,6 +21,6 @@ public class AutoKafkaConfiguration {
     @Primary
     @ConditionalOnProperty(name = "kafka.sender.primary.enabled", matchIfMissing = false, havingValue = "true")
     public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultReactorKafkaSender(kafkaProperties.getSender().get("primary"));
+        return new DefaultReactorKafkaSender(kafkaProperties.getSenderProperties("primary"));
     }
 }

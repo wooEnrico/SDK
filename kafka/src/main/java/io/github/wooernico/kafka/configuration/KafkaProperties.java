@@ -45,6 +45,14 @@ public class KafkaProperties implements InitializingBean {
         this.consumer = consumer;
     }
 
+    public SenderProperties getSenderProperties(String key) {
+        return this.sender.get(key);
+    }
+
+    public ConsumerProperties getConsumerProperties(String key) {
+        return this.consumer.get(key);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         this.consumer.forEach((k, v) -> {
