@@ -19,15 +19,31 @@ public class KafkaProperties implements InitializingBean {
     /**
      * {@link  org.apache.kafka.clients.producer.ProducerConfig}
      */
-    private final Properties commonSenderProperties = new Properties();
+    private Properties commonSenderProperties = new Properties();
     /**
      * kafka 消费者配置 {@link org.apache.kafka.clients.consumer.ConsumerConfig}
      */
-    private final Properties commonConsumerProperties = new Properties();
+    private Properties commonConsumerProperties = new Properties();
 
     private Map<String, SenderProperties> sender = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     private Map<String, ConsumerProperties> consumer = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+    public Properties getCommonSenderProperties() {
+        return commonSenderProperties;
+    }
+
+    public void setCommonSenderProperties(Properties commonSenderProperties) {
+        this.commonSenderProperties = commonSenderProperties;
+    }
+
+    public Properties getCommonConsumerProperties() {
+        return commonConsumerProperties;
+    }
+
+    public void setCommonConsumerProperties(Properties commonConsumerProperties) {
+        this.commonConsumerProperties = commonConsumerProperties;
+    }
 
     public Map<String, SenderProperties> getSender() {
         return sender;
@@ -46,11 +62,19 @@ public class KafkaProperties implements InitializingBean {
     }
 
     public SenderProperties getSenderProperties(String key) {
-        return this.sender.get(key);
+        SenderProperties senderProperties = this.sender.get(key);
+        if (senderProperties != null) {
+            senderProperties.addCommonProperties(this.commonSenderProperties);
+        }
+        return senderProperties;
     }
 
     public ConsumerProperties getConsumerProperties(String key) {
-        return this.consumer.get(key);
+        ConsumerProperties consumerProperties = this.consumer.get(key);
+        if (consumerProperties != null) {
+            consumerProperties.addCommonProperties(this.commonConsumerProperties);
+        }
+        return consumerProperties;
     }
 
     @Override
