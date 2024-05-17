@@ -1,7 +1,6 @@
 package io.github.wooernico.kafka.consumer;
 
 import io.github.wooernico.kafka.KafkaUtil;
-import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
@@ -20,6 +19,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -39,6 +39,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
 
     private final Map<ThreadPoolExecutor, Disposable> subscribers = new ConcurrentHashMap<>();
     private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
+    private final AtomicBoolean close = new AtomicBoolean(false);
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<K, V>, Mono<Void>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this(name, consumerProperties, keyDeserializer, valueDeserializer, consumer,
@@ -56,11 +57,15 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         this.onAssign = onAssign;
         this.onRevoke = onRevoke;
 
-        this.subscribe(null);
+        this.subscribe();
     }
 
     @Override
     public void close() throws IOException {
+        if (!this.close.compareAndSet(false, true)) {
+            return;
+        }
+
         this.subscribers.forEach((threadPoolExecutor, disposable) -> {
             disposable.dispose();
             threadPoolExecutor.shutdown();
@@ -79,20 +84,30 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
             }
         }
 
-        this.reactorKafkaHandler();
+        if (this.close.get()) {
+            return;
+        }
+
+        this.subscribe();
     }
 
-    private void reactorKafkaHandler() {
+    private void subscribe() {
         CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
         ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
-
-        Disposable disposable = this.createKafkaReceiver(this.consumerProperties, this.keyDeserializer, this.valueDeserializer, this.onAssign, this.onRevoke).receiveAutoAck().concatMap(r -> r)
-                .flatMap(record -> Mono.defer(() -> this.consumer.apply(record)).subscribeOn(Schedulers.fromExecutor(threadPoolExecutor)))
-                .onErrorContinue(e -> !(e instanceof CommitFailedException), (e, o) -> log.error("onErrorContinue record : {}", o, e))
+        KafkaReceiver<K, V> kafkaReceiver = this.createKafkaReceiver(this.consumerProperties, this.keyDeserializer, this.valueDeserializer, this.onAssign, this.onRevoke);
+        Disposable disposable = kafkaReceiver.receiveAutoAck().concatMap(r -> r)
                 .doOnError(e -> {
-                    log.error("commit failed for rebalanced and recreate {}", this.name, e);
+                    log.error("kafka receiver recreate {}", this.name, e);
                     this.subscribe(threadPoolExecutor);
-                }).subscribe();
+                })
+                .flatMap(record -> Mono.defer(() -> this.consumer.apply(record))
+                        .onErrorResume(throwable -> {
+                            log.error("onErrorResume record : {}", record, throwable);
+                            return Mono.empty();
+                        })
+                        .subscribeOn(Schedulers.fromExecutor(threadPoolExecutor))
+                )
+                .subscribe();
 
         this.subscribers.put(threadPoolExecutor, disposable);
     }

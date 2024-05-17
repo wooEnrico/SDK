@@ -68,7 +68,10 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
 
     @Override
     public void close() {
-        this.close.set(true);
+        if (!this.close.compareAndSet(false, true)) {
+            return;
+        }
+
         this.subscribers.forEach((threadPoolExecutor, kafkaConsumer) -> {
             threadPoolExecutor.shutdown();
         });
@@ -88,9 +91,11 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         }
 
         CompletableFuture.runAsync(this::loopPoll, this.pollExecutor).exceptionally(throwable -> {
-            log.error("stop poll and close consumer {}", this.name, throwable);
             if (!close.get()) {
+                log.error("kafka consumer recreate {}", this.name, throwable);
                 this.subscribe(threadPoolExecutor);
+            } else {
+                log.error("kafka consumer stop {}", this.name, throwable);
             }
             return null;
         });
