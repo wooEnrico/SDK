@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
 
 @ConfigurationProperties(prefix = "kafka")
@@ -61,12 +62,20 @@ public class KafkaProperties implements InitializingBean {
         this.consumer = consumer;
     }
 
+    public Set<String> getSenderSet() {
+        return sender.keySet();
+    }
+
     public SenderProperties getSenderProperties(String key) {
         SenderProperties senderProperties = this.sender.get(key);
         if (senderProperties != null) {
             senderProperties.addCommonProperties(this.commonSenderProperties);
         }
         return senderProperties;
+    }
+
+    public Set<String> getConsumerSet() {
+        return consumer.keySet();
     }
 
     public ConsumerProperties getConsumerProperties(String key) {
@@ -79,14 +88,14 @@ public class KafkaProperties implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        log.info("kafka common consumer properties {}", this.commonConsumerProperties);
         this.consumer.forEach((k, v) -> {
-            v.addCommonProperties(this.commonConsumerProperties);
             log.info("kafka consumer properties {} ： {}", k, v);
         });
-
+        log.info("kafka common sender properties {}", this.commonSenderProperties);
         this.sender.forEach((k, v) -> {
-            v.addCommonProperties(this.commonSenderProperties);
             log.info("kafka sender properties {} ： {}", k, v);
         });
     }
+
 }

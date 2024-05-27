@@ -11,7 +11,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware {
@@ -32,41 +31,42 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        Map<String, ConsumerProperties> consumer = this.kafkaProperties.getConsumer();
+        for (String key : this.kafkaProperties.getConsumerSet()) {
+            ConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
+            this.createConsumer(key, consumerProperties);
+        }
+    }
 
-        for (Map.Entry<String, ConsumerProperties> entry : consumer.entrySet()) {
-            String key = entry.getKey();
-            ConsumerProperties properties = entry.getValue();
+    private void createConsumer(String key, ConsumerProperties properties) throws Exception {
 
-            if (!properties.isEnabled()) {
-                continue;
+        if (key == null || key.isEmpty() || properties == null || !properties.isEnabled()) {
+            return;
+        }
+
+        String handlerBeanName = properties.getHandlerBeanName();
+
+        IKafkaHandler handler = handlerBeanName != null ?
+                this.applicationContext.getBean(handlerBeanName, IKafkaHandler.class)
+                :
+                this.applicationContext.getBean(key, IKafkaHandler.class);
+
+        if (handler instanceof KafkaHandler) {
+            DefaultKafkaHandler kafkaHandler = (DefaultKafkaHandler) handler;
+            for (int i = 0; i < properties.getConcurrency(); i++) {
+                DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, kafkaHandler);
+                kafkaConsumer.afterPropertiesSet();
+                this.disposableBeans.add(kafkaConsumer);
             }
 
-            String handlerBeanName = properties.getHandlerBeanName();
-
-            IKafkaHandler handler = handlerBeanName != null ?
-                    this.applicationContext.getBean(handlerBeanName, IKafkaHandler.class)
-                    :
-                    this.applicationContext.getBean(key, IKafkaHandler.class);
-
-            if (handler instanceof KafkaHandler) {
-                DefaultKafkaHandler kafkaHandler = (DefaultKafkaHandler) handler;
-                for (int i = 0; i < properties.getConcurrency(); i++) {
-                    DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, kafkaHandler);
-                    kafkaConsumer.afterPropertiesSet();
-                    this.disposableBeans.add(kafkaConsumer);
-                }
-
-            } else if (handler instanceof ReactorKafkaHandler) {
-                DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
-                for (int i = 0; i < properties.getConcurrency(); i++) {
-                    DefaultReactorKafkaReceiver reactorKafkaReceiver = new DefaultReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
-                    reactorKafkaReceiver.afterPropertiesSet();
-                    this.disposableBeans.add(reactorKafkaReceiver);
-                }
-            } else {
-                log.error("no kafka handler for {}", properties);
+        } else if (handler instanceof ReactorKafkaHandler) {
+            DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
+            for (int i = 0; i < properties.getConcurrency(); i++) {
+                DefaultReactorKafkaReceiver reactorKafkaReceiver = new DefaultReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
+                reactorKafkaReceiver.afterPropertiesSet();
+                this.disposableBeans.add(reactorKafkaReceiver);
             }
+        } else {
+            log.error("no kafka handler for {}", properties);
         }
     }
 
