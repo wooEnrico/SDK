@@ -63,7 +63,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         this.consumerRebalanceListener = consumerRebalanceListener == null ? new NoOpConsumerRebalanceListener() : consumerRebalanceListener;
         this.pollExecutor = getKafkaPollExecutor(this.name);
 
-        this.subscribe(null);
+        this.subscribe();
     }
 
     @Override
@@ -71,26 +71,36 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         if (!this.close.compareAndSet(false, true)) {
             return;
         }
-
         this.subscribers.forEach((threadPoolExecutor, kafkaConsumer) -> {
             threadPoolExecutor.shutdown();
         });
     }
 
     private void subscribe(ThreadPoolExecutor threadPoolExecutor) {
-
         if (threadPoolExecutor != null) {
             org.apache.kafka.clients.consumer.KafkaConsumer<K, V> remove = this.subscribers.remove(threadPoolExecutor);
             threadPoolExecutor.shutdown();
-
             if (remove == null) {
                 return;
             } else {
                 remove.close();
             }
         }
+        this.subscribe();
+    }
 
-        CompletableFuture.runAsync(this::loopPoll, this.pollExecutor).exceptionally(throwable -> {
+
+    private void subscribe() {
+        CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
+        ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
+
+        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>(this.consumerProperties.buildProperties(), this.keyDeserializer, this.valueDeserializer);
+        kafkaConsumer.subscribe(this.consumerProperties.getTopic(), consumerRebalanceListener);
+        this.subscribers.put(threadPoolExecutor, kafkaConsumer);
+
+        CompletableFuture.runAsync(() -> {
+            this.loopPoll(kafkaConsumer, threadPoolExecutor);
+        }, this.pollExecutor).exceptionally(throwable -> {
             if (!close.get()) {
                 log.error("kafka consumer recreate {}", this.name, throwable);
                 this.subscribe(threadPoolExecutor);
@@ -101,15 +111,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         });
     }
 
-    private void loopPoll() {
-        CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
-        ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
-
-        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>(this.consumerProperties.buildProperties(), this.keyDeserializer, this.valueDeserializer);
-        kafkaConsumer.subscribe(this.consumerProperties.getTopic(), consumerRebalanceListener);
-
-        this.subscribers.put(threadPoolExecutor, kafkaConsumer);
-
+    private void loopPoll(org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer, ThreadPoolExecutor threadPoolExecutor) {
         while (!this.close.get()) {
             ConsumerRecords<K, V> records = kafkaConsumer.poll(this.consumerProperties.getPollTimeout());
             for (ConsumerRecord<K, V> record : records) {
