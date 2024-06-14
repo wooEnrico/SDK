@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka.sender;
+package io.github.wooenrico.kafka.sender;
 
 import com.github.benmanes.caffeine.cache.*;
 import org.apache.kafka.clients.producer.ProducerRecord;

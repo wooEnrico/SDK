@@ -1,7 +1,7 @@
-package io.github.wooernico.kafka.configuration;
+package io.github.wooenrico.kafka.configuration;
 
-import io.github.wooernico.kafka.consumer.KafkaConsumerFactory;
-import io.github.wooernico.kafka.sender.DefaultReactorKafkaSender;
+import io.github.wooenrico.kafka.consumer.KafkaConsumerFactory;
+import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

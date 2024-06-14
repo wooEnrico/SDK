@@ -1,7 +1,7 @@
-package io.github.wooernico.kafka.consumer;
+package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooernico.kafka.ExecutorConf;
-import io.github.wooernico.kafka.KafkaUtil;
+import io.github.wooenrico.kafka.ExecutorConf;
+import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.time.Duration;

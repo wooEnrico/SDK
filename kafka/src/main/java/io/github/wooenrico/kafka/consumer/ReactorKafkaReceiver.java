@@ -1,6 +1,6 @@
-package io.github.wooernico.kafka.consumer;
+package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooernico.kafka.KafkaUtil;
+import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;

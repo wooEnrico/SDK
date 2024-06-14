@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka.sender;
+package io.github.wooenrico.kafka.sender;
 
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
@@ -8,7 +8,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 import java.util.Properties;
 
-public class DefaultKafkaProducer extends io.github.wooernico.kafka.sender.KafkaProducer<String, String> implements InitializingBean, DisposableBean {
+public class DefaultKafkaProducer extends io.github.wooenrico.kafka.sender.KafkaProducer<String, String> implements InitializingBean, DisposableBean {
     private static final Logger log = LoggerFactory.getLogger(DefaultKafkaProducer.class);
 
     public DefaultKafkaProducer(Properties properties) {

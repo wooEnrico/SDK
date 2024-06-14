@@ -70,6 +70,6 @@
     </root>
 
     <logger name="com.springboot.thread.AutoRunTemplate" level="ERROR"/>
-    <logger name="io.github.wooernico.kafka.sender.ReactorKafkaSender" level="DEBUG"/>
+    <logger name="io.github.wooenrico.kafka.sender.ReactorKafkaSender" level="DEBUG"/>
 </configuration>
 

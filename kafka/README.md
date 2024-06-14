@@ -68,7 +68,7 @@ public class MyApplication {
 ```java
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooernico.kafka.handler.DefaultKafkaHandler;
+import io.github.wooenrico.kafka.handler.DefaultKafkaHandler;
 
 @Service("myHandler")
 public class MyHandler implements DefaultKafkaHandler {
@@ -84,7 +84,7 @@ public class MyHandler implements DefaultKafkaHandler {
 ```java
 import reactor.core.publisher.Mono;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooernico.kafka.handler.DefaultReactorKafkaHandler;
+import io.github.wooenrico.kafka.handler.DefaultReactorKafkaHandler;
 
 @Service("myReactorHandler")
 public class MyReactorHandler implements DefaultReactorKafkaHandler {
@@ -101,9 +101,9 @@ public class MyReactorHandler implements DefaultReactorKafkaHandler {
 ### define
 
 ```java
-import io.github.wooernico.kafka.configuration.KafkaProperties;
-import io.github.wooernico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooernico.kafka.sender.DefaultKafkaProducer;
+import io.github.wooenrico.kafka.configuration.KafkaProperties;
+import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
+import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 
 @Configuration
 @EnableConfigurationProperties(KafkaProperties.class)
@@ -126,8 +126,8 @@ public class MyConfiguration {
 
 ```java
 
-import io.github.wooernico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooernico.kafka.sender.DefaultKafkaProducer;
+import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
+import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 
 @Service
 public class SenderTest {

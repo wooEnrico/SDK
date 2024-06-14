@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka.consumer;
+package io.github.wooenrico.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;

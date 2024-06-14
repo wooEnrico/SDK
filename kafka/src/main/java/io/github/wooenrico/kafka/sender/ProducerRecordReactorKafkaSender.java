@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka.sender;
+package io.github.wooenrico.kafka.sender;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serializer;

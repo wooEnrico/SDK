@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka.annotation;
+package io.github.wooenrico.kafka.annotation;
 
 import org.springframework.context.annotation.Import;
 
@@ -7,6 +7,6 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(value = {io.github.wooernico.kafka.configuration.AutoKafkaConfiguration.class})
+@Import(value = {io.github.wooenrico.kafka.configuration.AutoKafkaConfiguration.class})
 public @interface AutoKafka {
 }

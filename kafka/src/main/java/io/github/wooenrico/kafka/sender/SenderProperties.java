@@ -1,6 +1,6 @@
-package io.github.wooernico.kafka.sender;
+package io.github.wooenrico.kafka.sender;
 
-import io.github.wooernico.kafka.KafkaUtil;
+import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.time.Duration;

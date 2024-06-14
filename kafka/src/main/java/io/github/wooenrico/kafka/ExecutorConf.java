@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka;
+package io.github.wooenrico.kafka;
 
 public class ExecutorConf {
     private int corePoolSize = Runtime.getRuntime().availableProcessors();

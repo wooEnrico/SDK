@@ -1,6 +1,6 @@
-import io.github.wooernico.kafka.sender.DefaultKafkaProducer;
-import io.github.wooernico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooernico.kafka.sender.SenderProperties;
+import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
+import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
+import io.github.wooenrico.kafka.sender.SenderProperties;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.RecordMetadata;

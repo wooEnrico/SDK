@@ -1,4 +1,4 @@
-import io.github.wooernico.kafka.sender.SenderProperties;
+import io.github.wooenrico.kafka.sender.SenderProperties;
 import org.apache.kafka.clients.producer.*;
 import org.junit.Ignore;
 import org.junit.Test;

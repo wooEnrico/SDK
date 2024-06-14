@@ -1,7 +1,7 @@
-package io.github.wooernico.kafka.consumer;
+package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooernico.kafka.configuration.KafkaProperties;
-import io.github.wooernico.kafka.handler.*;
+import io.github.wooenrico.kafka.configuration.KafkaProperties;
+import io.github.wooenrico.kafka.handler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;

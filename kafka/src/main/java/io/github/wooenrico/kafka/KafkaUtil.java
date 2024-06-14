@@ -1,4 +1,4 @@
-package io.github.wooernico.kafka;
+package io.github.wooenrico.kafka;
 
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
