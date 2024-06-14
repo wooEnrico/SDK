@@ -16,6 +16,10 @@
             <groupId>io.github.wooenrico</groupId>
             <artifactId>version</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.wooenrico</groupId>
+            <artifactId>utils</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
