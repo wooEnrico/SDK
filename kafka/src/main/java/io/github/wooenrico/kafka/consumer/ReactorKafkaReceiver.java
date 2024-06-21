@@ -5,7 +5,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -16,11 +15,9 @@ import reactor.kafka.receiver.ReceiverPartition;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -37,15 +34,12 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
     protected final Consumer<Collection<ReceiverPartition>> onRevoke;
     protected final Function<ConsumerRecord<K, V>, Mono<Void>> consumer;
 
-    private final Map<ThreadPoolExecutor, Disposable> subscribers = new ConcurrentHashMap<>();
-    private final AtomicInteger rebalanceCounter = new AtomicInteger(0);
+    private final ConcurrentHashMap<KafkaReceiver<K, V>, Disposable> subscribers = new ConcurrentHashMap<>();
     private final AtomicBoolean close = new AtomicBoolean(false);
+    private final ThreadPoolExecutor threadPoolExecutor;
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<K, V>, Mono<Void>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        this(name, consumerProperties, keyDeserializer, valueDeserializer, consumer,
-                partitions -> log.info("assigned partitions : {}", partitions),
-                partitions -> log.warn("revoked partitions : {}", partitions)
-        );
+        this(name, consumerProperties, keyDeserializer, valueDeserializer, consumer, null, null);
     }
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Function<ConsumerRecord<K, V>, Mono<Void>> consumer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
@@ -54,9 +48,9 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
         this.consumer = consumer;
-        this.onAssign = onAssign;
-        this.onRevoke = onRevoke;
-
+        this.onAssign = onAssign != null ? onAssign : partitions -> log.info("assigned partitions : {}", partitions);
+        this.onRevoke = onRevoke != null ? onRevoke : partitions -> log.warn("revoked partitions : {}", partitions);
+        this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.subscribe();
     }
 
@@ -65,23 +59,20 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         if (!this.close.compareAndSet(false, true)) {
             return;
         }
-
-        this.subscribers.forEach((threadPoolExecutor, disposable) -> {
+        this.subscribers.forEach((kafkaReceiver, disposable) -> {
             disposable.dispose();
-            threadPoolExecutor.shutdown();
         });
+        this.threadPoolExecutor.shutdown();
     }
 
-    private void subscribe(ThreadPoolExecutor threadPoolExecutor) {
-        if (threadPoolExecutor != null) {
-            Disposable remove = this.subscribers.remove(threadPoolExecutor);
-            threadPoolExecutor.shutdown();
-
+    private synchronized void subscribe(KafkaReceiver<K, V> kafkaReceiver) {
+        if (kafkaReceiver != null) {
+            Disposable remove = this.subscribers.remove(kafkaReceiver);
             if (remove == null) {
                 return;
-            } else {
-                remove.dispose();
             }
+
+            remove.dispose();
         }
 
         if (this.close.get()) {
@@ -92,13 +83,13 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
     }
 
     private void subscribe() {
-        CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(this.name + "-" + this.rebalanceCounter.incrementAndGet() + "-");
-        ThreadPoolExecutor threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(this.consumerProperties.getExecutor(), customizableThreadFactory);
         KafkaReceiver<K, V> kafkaReceiver = this.createKafkaReceiver(this.consumerProperties, this.keyDeserializer, this.valueDeserializer, this.onAssign, this.onRevoke);
+        final Runnable reConsumerRunnable = () -> this.subscribe(kafkaReceiver);
+
         Disposable disposable = kafkaReceiver.receiveAutoAck().concatMap(r -> r)
                 .doOnError(e -> {
                     log.error("kafka receiver recreate {}", this.name, e);
-                    this.subscribe(threadPoolExecutor);
+                    reConsumerRunnable.run();
                 })
                 .flatMap(record -> Mono.defer(() -> this.consumer.apply(record))
                         .onErrorResume(throwable -> {
@@ -109,7 +100,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
                 )
                 .subscribe();
 
-        this.subscribers.put(threadPoolExecutor, disposable);
+        this.subscribers.put(kafkaReceiver, disposable);
     }
 
     private reactor.kafka.receiver.KafkaReceiver<K, V> createKafkaReceiver(ConsumerProperties properties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
