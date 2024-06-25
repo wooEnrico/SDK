@@ -65,7 +65,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         this.threadPoolExecutor.shutdown();
     }
 
-    private synchronized void subscribe(KafkaReceiver<K, V> kafkaReceiver) {
+    private void subscribe(KafkaReceiver<K, V> kafkaReceiver) {
         if (kafkaReceiver != null) {
             Disposable remove = this.subscribers.remove(kafkaReceiver);
             if (remove == null) {
