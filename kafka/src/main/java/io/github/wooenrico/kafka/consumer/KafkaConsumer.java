@@ -1,5 +1,6 @@
 package io.github.wooenrico.kafka.consumer;
 
+import com.google.common.util.concurrent.RateLimiter;
 import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -30,6 +31,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
     private final ThreadPoolExecutor pollExecutor;
     private final ConsumerRebalanceListener consumerRebalanceListener;
     private final ThreadPoolExecutor threadPoolExecutor;
+    private final RateLimiter rateLimiter;
 
     public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this(name, consumerProperties, consumer, keyDeserializer, valueDeserializer, null);
@@ -57,6 +59,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
                 log.info("lost partitions {}", partitions.toString());
             }
         };
+        this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
         this.pollExecutor = KafkaUtil.newSingleThreadPoolExecutor(name + "-poll");
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.subscribe();
@@ -107,15 +110,20 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         while (!this.close.get()) {
             ConsumerRecords<K, V> records = kafkaConsumer.poll(this.consumerProperties.getPollTimeout());
             for (ConsumerRecord<K, V> record : records) {
-                threadPoolExecutor.execute(() -> {
-                    try {
-                        this.consumer.accept(record);
-                    } catch (Exception e) {
-                        log.error("handle error record : {}", record, e);
-                    }
-                });
+                threadPoolExecutor.execute(() -> handleWithRateLimiter(record));
             }
         }
         kafkaConsumer.close();
+    }
+
+    private void handleWithRateLimiter(ConsumerRecord<K, V> record) {
+        try {
+            if (this.rateLimiter != null) {
+                this.rateLimiter.acquire();
+            }
+            this.consumer.accept(record);
+        } catch (Exception e) {
+            log.error("handle error record : {}", record, e);
+        }
     }
 }

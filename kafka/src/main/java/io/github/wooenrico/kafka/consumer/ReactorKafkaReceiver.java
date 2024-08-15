@@ -1,5 +1,6 @@
 package io.github.wooenrico.kafka.consumer;
 
+import com.google.common.util.concurrent.RateLimiter;
 import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -37,6 +38,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
     private final ConcurrentHashMap<KafkaReceiver<K, V>, Disposable> subscribers = new ConcurrentHashMap<>();
     private final AtomicBoolean close = new AtomicBoolean(false);
     private final ThreadPoolExecutor threadPoolExecutor;
+    private final RateLimiter rateLimiter;
 
     public ReactorKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<K, V>, Mono<Void>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
         this(name, consumerProperties, keyDeserializer, valueDeserializer, consumer, null, null);
@@ -51,6 +53,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         this.onAssign = onAssign != null ? onAssign : partitions -> log.info("assigned partitions : {}", partitions);
         this.onRevoke = onRevoke != null ? onRevoke : partitions -> log.warn("revoked partitions : {}", partitions);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
+        this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
         this.subscribe();
     }
 
@@ -91,16 +94,23 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
                     log.error("kafka receiver recreate {}", this.name, e);
                     reConsumerRunnable.run();
                 })
-                .flatMap(record -> Mono.defer(() -> this.consumer.apply(record))
-                        .onErrorResume(throwable -> {
-                            log.error("onErrorResume record : {}", record, throwable);
-                            return Mono.empty();
-                        })
-                        .subscribeOn(Schedulers.fromExecutor(threadPoolExecutor))
-                )
+                .flatMap(this::handleWithRateLimiter)
                 .subscribe();
 
         this.subscribers.put(kafkaReceiver, disposable);
+    }
+
+    private Mono<Void> handleWithRateLimiter(ConsumerRecord<K, V> record) {
+        return Mono.defer(() -> {
+                    if (this.rateLimiter != null) {
+                        this.rateLimiter.acquire();
+                    }
+                    return this.consumer.apply(record);
+                }).onErrorResume(throwable -> {
+                    log.error("onErrorResume record : {}", record, throwable);
+                    return Mono.empty();
+                })
+                .subscribeOn(Schedulers.fromExecutor(threadPoolExecutor));
     }
 
     private reactor.kafka.receiver.KafkaReceiver<K, V> createKafkaReceiver(ConsumerProperties properties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {

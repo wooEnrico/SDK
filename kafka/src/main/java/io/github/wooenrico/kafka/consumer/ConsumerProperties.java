@@ -46,6 +46,11 @@ public class ConsumerProperties {
      */
     private ExecutorConf executor = new ExecutorConf();
 
+    /**
+     * 消费速率
+     */
+    private Double rate;
+
     @Override
     public String toString() {
         return "ConsumerProperties{" +
@@ -134,5 +139,13 @@ public class ConsumerProperties {
 
     public Properties buildProperties() {
         return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
+    }
+
+    public Double getRate() {
+        return rate;
+    }
+
+    public void setRate(Double rate) {
+        this.rate = rate;
     }
 }

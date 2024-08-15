@@ -55,6 +55,7 @@ public class TestConsumer {
         ConsumerProperties consumerProperties = new ConsumerProperties();
         consumerProperties.addProperties(ConsumerConfig.GROUP_ID_CONFIG, "test-group-id");
         consumerProperties.setTopic(Collections.singletonList("test"));
+        consumerProperties.setRate(100D);
         return consumerProperties;
     }
 }
