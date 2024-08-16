@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 public class DefaultReactorKafkaSender extends ProducerRecordReactorKafkaSender<String, String> implements InitializingBean, DisposableBean {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultKafkaProducer.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultReactorKafkaSender.class);
 
     public DefaultReactorKafkaSender(SenderProperties properties) {
         super(properties, new StringSerializer(), new StringSerializer());
