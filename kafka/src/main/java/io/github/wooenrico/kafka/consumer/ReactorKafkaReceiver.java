@@ -94,13 +94,13 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
                     log.error("kafka receiver recreate {}", this.name, e);
                     reConsumerRunnable.run();
                 })
-                .flatMap(this::handleWithRateLimiter)
+                .flatMap(this::executorHandleRecordWithRateLimiter)
                 .subscribe();
 
         this.subscribers.put(kafkaReceiver, disposable);
     }
 
-    private Mono<Void> handleWithRateLimiter(ConsumerRecord<K, V> record) {
+    private Mono<Void> executorHandleRecordWithRateLimiter(ConsumerRecord<K, V> record) {
         return Mono.defer(() -> {
                     if (this.rateLimiter != null) {
                         this.rateLimiter.acquire();

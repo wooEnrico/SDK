@@ -97,7 +97,7 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         final Runnable reConsumerRunnable = () -> this.subscribe(kafkaConsumer);
 
         CompletableFuture<Void> voidCompletableFuture = CompletableFuture.runAsync(() -> {
-            this.loopPoll(kafkaConsumer, threadPoolExecutor);
+            this.loopPoll(kafkaConsumer);
         }, this.pollExecutor).whenComplete((unused, throwable) -> {
             log.error("kafka consumer recreate {}", this.name, throwable);
             reConsumerRunnable.run();
@@ -106,24 +106,29 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         this.consumerMap.put(kafkaConsumer, voidCompletableFuture);
     }
 
-    private void loopPoll(org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer, ThreadPoolExecutor threadPoolExecutor) {
+    private void loopPoll(org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer) {
         while (!this.close.get()) {
             ConsumerRecords<K, V> records = kafkaConsumer.poll(this.consumerProperties.getPollTimeout());
+            if (records == null || records.isEmpty()) {
+                continue;
+            }
             for (ConsumerRecord<K, V> record : records) {
-                threadPoolExecutor.execute(() -> handleWithRateLimiter(record));
+                this.executorHandleRecordWithRateLimiter(record);
             }
         }
         kafkaConsumer.close();
     }
 
-    private void handleWithRateLimiter(ConsumerRecord<K, V> record) {
-        try {
-            if (this.rateLimiter != null) {
-                this.rateLimiter.acquire();
+    private void executorHandleRecordWithRateLimiter(ConsumerRecord<K, V> record) {
+        this.threadPoolExecutor.execute(() -> {
+            try {
+                if (this.rateLimiter != null) {
+                    this.rateLimiter.acquire();
+                }
+                this.consumer.accept(record);
+            } catch (Exception e) {
+                log.error("handle error record : {}", record, e);
             }
-            this.consumer.accept(record);
-        } catch (Exception e) {
-            log.error("handle error record : {}", record, e);
-        }
+        });
     }
 }
