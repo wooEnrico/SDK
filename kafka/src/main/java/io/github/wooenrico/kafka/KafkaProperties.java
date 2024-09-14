@@ -1,21 +1,14 @@
-package io.github.wooenrico.kafka.configuration;
+package io.github.wooenrico.kafka;
 
 import io.github.wooenrico.kafka.consumer.ConsumerProperties;
 import io.github.wooenrico.kafka.sender.SenderProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-@ConfigurationProperties(prefix = "kafka")
-public class KafkaProperties implements InitializingBean {
-
-    private static final Logger log = LoggerFactory.getLogger(KafkaProperties.class);
+public class KafkaProperties {
 
     /**
      * {@link  org.apache.kafka.clients.producer.ProducerConfig}
@@ -84,18 +77,6 @@ public class KafkaProperties implements InitializingBean {
             consumerProperties.addCommonProperties(this.commonConsumerProperties);
         }
         return consumerProperties;
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        log.info("kafka common consumer properties {}", this.commonConsumerProperties);
-        this.consumer.forEach((k, v) -> {
-            log.info("kafka consumer properties {} ： {}", k, v);
-        });
-        log.info("kafka common sender properties {}", this.commonSenderProperties);
-        this.sender.forEach((k, v) -> {
-            log.info("kafka sender properties {} ： {}", k, v);
-        });
     }
 
 }

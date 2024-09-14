@@ -5,15 +5,11 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
 
 public class TestSender {
-
-    private static final Logger log = LoggerFactory.getLogger(TestSender.class);
 
     private final int count = 100;
 
@@ -32,12 +28,12 @@ public class TestSender {
         DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, producerRecordSenderResult -> {
             countDownLatch.countDown();
             if (producerRecordSenderResult.exception() != null) {
-                log.error("send error {}", producerRecordSenderResult.correlationMetadata(), producerRecordSenderResult.exception());
+                System.out.println(producerRecordSenderResult.correlationMetadata());
+                System.err.println(producerRecordSenderResult.exception());
             } else {
-                log.info("send complete {}", producerRecordSenderResult.correlationMetadata());
+                System.out.println(producerRecordSenderResult.correlationMetadata());
             }
         });
-        reactorKafkaSender.afterPropertiesSet();
 
         Flux.range(0, count)
                 .flatMap(integer -> reactorKafkaSender.send("test", integer + ""))
@@ -55,16 +51,16 @@ public class TestSender {
         SenderProperties senderProperties = getSenderProperties();
 
         DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.buildProperties());
-        kafkaProducer.afterPropertiesSet();
+
         for (int i = 0; i < count; i++) {
             kafkaProducer.send("test", i + "", new Callback() {
                 @Override
                 public void onCompletion(RecordMetadata metadata, Exception exception) {
                     countDownLatch.countDown();
                     if (exception != null) {
-                        log.error("send error", exception);
+                        System.err.println(exception);
                     } else {
-                        log.info("send complete {}", metadata);
+                        System.out.println(metadata);
                     }
                 }
             });

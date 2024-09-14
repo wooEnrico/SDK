@@ -101,7 +101,7 @@ public class MyReactorHandler implements DefaultReactorKafkaHandler {
 ### define
 
 ```java
-import io.github.wooenrico.kafka.configuration.KafkaProperties;
+import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 

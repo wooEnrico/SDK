@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>kafka-spring-boot-starter</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -20,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.wooenrico</groupId>
-            <artifactId>kafka</artifactId>
+            <artifactId>spring-boot-kafka</artifactId>
         </dependency>
     </dependencies>
 </project>

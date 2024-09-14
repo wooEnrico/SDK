@@ -2,8 +2,6 @@ import io.github.wooenrico.kafka.consumer.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
@@ -13,42 +11,51 @@ import java.util.function.Function;
 
 public class TestConsumer {
 
-    private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
+    private CountDownLatch getCountDownLatch() {
+        return new CountDownLatch(100);
+    }
 
     @Ignore
     @org.junit.Test
     public void testConsumer() throws Exception {
 
+        CountDownLatch countDownLatch = getCountDownLatch();
+
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        DefaultKafkaConsumer test = new DefaultKafkaConsumer("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
+        DefaultKafkaConsumer defaultKafkaConsumer = new DefaultKafkaConsumer("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
             @Override
             public void accept(ConsumerRecord<String, String> stringStringConsumerRecord) {
-                log.info("{}", stringStringConsumerRecord.value());
+                countDownLatch.countDown();
+                System.out.println(stringStringConsumerRecord.value());
             }
         });
-        test.afterPropertiesSet();
 
-        new CountDownLatch(1).await();
+        countDownLatch.await();
+
+        defaultKafkaConsumer.close();
     }
 
     @Ignore
     @org.junit.Test
     public void testReactorConsumer() throws Exception {
 
+        CountDownLatch countDownLatch = getCountDownLatch();
+
         ConsumerProperties consumerProperties = getConsumerProperties();
 
-        DefaultReactorKafkaReceiver test2 = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
+        DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
             @Override
             public Mono<Void> apply(ConsumerRecord<String, String> stringStringConsumerRecord) {
-                log.info("{}", stringStringConsumerRecord.value());
+                countDownLatch.countDown();
+                System.out.println(stringStringConsumerRecord.value());
                 return Mono.empty();
             }
         });
 
-        test2.afterPropertiesSet();
+        countDownLatch.await();
 
-        new CountDownLatch(1).await();
+        defaultReactorKafkaReceiver.close();
     }
 
     private static ConsumerProperties getConsumerProperties() {

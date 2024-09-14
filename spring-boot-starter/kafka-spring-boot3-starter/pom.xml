@@ -10,17 +10,18 @@
     </parent>
 
     <artifactId>kafka-spring-boot3-starter</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.github.wooenrico</groupId>
-            <artifactId>kafka</artifactId>
+            <artifactId>spring-boot-kafka</artifactId>
         </dependency>
     </dependencies>
 </project>

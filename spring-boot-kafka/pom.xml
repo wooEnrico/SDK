@@ -9,8 +9,8 @@
         <version>1.0.6-SNAPSHOT</version>
     </parent>
 
-    <artifactId>spring-boot-starter</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>spring-boot-kafka</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -18,19 +18,27 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <modules>
-        <module>kafka-spring-boot-starter</module>
-        <module>kafka-spring-boot3-starter</module>
-    </modules>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>io.github.wooenrico</groupId>
-                <artifactId>spring-boot-kafka</artifactId>
+                <artifactId>kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <version>2.7.12</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.wooenrico</groupId>
+            <artifactId>kafka</artifactId>
+        </dependency>
+    </dependencies>
 </project>

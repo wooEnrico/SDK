@@ -1,7 +1,6 @@
 package io.github.wooenrico.kafka;
 
 import io.github.wooenrico.kafka.consumer.ConsumerProperties;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -33,13 +32,13 @@ public final class KafkaUtil {
     }
 
     public static ThreadPoolExecutor newThreadPoolExecutor(String name, ConsumerProperties consumerProperties) {
-        CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(name + "-");
-        return KafkaUtil.newThreadPoolExecutor(consumerProperties.getExecutor(), customizableThreadFactory);
+        NamedThreadFactory namedThreadFactory = new NamedThreadFactory(name);
+        return KafkaUtil.newThreadPoolExecutor(consumerProperties.getExecutor(), namedThreadFactory);
     }
 
     public static ThreadPoolExecutor newSingleThreadPoolExecutor(String name) {
-        CustomizableThreadFactory customizableThreadFactory = new CustomizableThreadFactory(name + "-");
+        NamedThreadFactory namedThreadFactory = new NamedThreadFactory(name);
         return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(), customizableThreadFactory);
+                new LinkedBlockingQueue<Runnable>(), namedThreadFactory);
     }
 }
