@@ -11,7 +11,7 @@
 # USEAGE
 
 * [kafka](https://github.com/wooEnrico/SDK/blob/master/kafka/README.md)
-* [kafka-spring-boot-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/kafka-spring-boot-starter/README.md)
-* [kafka-spring-boot3-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/kafka-spring-boot3-starter/README.md)
+* [spring-boot-kafka-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/spring-boot-kafka-starter/README.md)
+* [spring-boot3-kafka-starter](https://github.com/wooEnrico/SDK/blob/master/spring-boot-starter/spring-boot3-kafka-starter/README.md)
 * [spring-boot-data-redis](https://github.com/wooEnrico/SDK/blob/redis-2.7.5/README.md)
 * [spring-boot3-data-redis](https://github.com/wooEnrico/SDK/tree/redis-3.1.2/README.md)

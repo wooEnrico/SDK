@@ -2,14 +2,14 @@
 
 ## dependency
 
-you can use in spring boot 3.x
+you can use in spring boot 2.x
 
 ```xml
 
 <dependencies>
     <dependency>
         <groupId>io.github.wooenrico</groupId>
-        <artifactId>kafka-spring-boot3-starter</artifactId>
+        <artifactId>spring-boot-kafka-starter</artifactId>
         <version>1.0.5</version>
     </dependency>
 </dependencies>

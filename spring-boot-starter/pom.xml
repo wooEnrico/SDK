@@ -19,8 +19,8 @@
     </properties>
 
     <modules>
-        <module>kafka-spring-boot-starter</module>
-        <module>kafka-spring-boot3-starter</module>
+        <module>spring-boot-kafka-starter</module>
+        <module>spring-boot3-kafka-starter</module>
     </modules>
 
     <dependencyManagement>
