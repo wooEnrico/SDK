@@ -13,8 +13,7 @@
         <module>version</module>
         <module>kafka</module>
         <module>spring-boot-kafka</module>
-        <module>spring-boot-starter/spring-boot-kafka-starter</module>
-        <module>spring-boot-starter/spring-boot3-kafka-starter</module>
+        <module>spring-boot-starter</module>
     </modules>
     <packaging>pom</packaging>
 
