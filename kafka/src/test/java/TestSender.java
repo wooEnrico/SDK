@@ -5,11 +5,14 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
 
 public class TestSender {
+    private static final Logger log = LoggerFactory.getLogger(TestSender.class);
 
     private final int count = 100;
 
@@ -28,10 +31,9 @@ public class TestSender {
         DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, producerRecordSenderResult -> {
             countDownLatch.countDown();
             if (producerRecordSenderResult.exception() != null) {
-                System.out.println(producerRecordSenderResult.correlationMetadata());
-                System.err.println(producerRecordSenderResult.exception());
+                log.error("send error {}", producerRecordSenderResult.correlationMetadata(), producerRecordSenderResult.exception());
             } else {
-                System.out.println(producerRecordSenderResult.correlationMetadata());
+                log.info("send complete {}", producerRecordSenderResult.correlationMetadata());
             }
         });
 
@@ -58,9 +60,9 @@ public class TestSender {
                 public void onCompletion(RecordMetadata metadata, Exception exception) {
                     countDownLatch.countDown();
                     if (exception != null) {
-                        System.err.println(exception);
+                        log.error("send error", exception);
                     } else {
-                        System.out.println(metadata);
+                        log.info("send complete {}", metadata);
                     }
                 }
             });

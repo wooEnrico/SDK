@@ -2,6 +2,8 @@ import io.github.wooenrico.kafka.consumer.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
@@ -10,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TestConsumer {
+    private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
 
     private CountDownLatch getCountDownLatch() {
         return new CountDownLatch(100);
@@ -27,7 +30,7 @@ public class TestConsumer {
             @Override
             public void accept(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 countDownLatch.countDown();
-                System.out.println(stringStringConsumerRecord.value());
+                log.info("{}", stringStringConsumerRecord.value());
             }
         });
 
@@ -48,7 +51,7 @@ public class TestConsumer {
             @Override
             public Mono<Void> apply(ConsumerRecord<String, String> stringStringConsumerRecord) {
                 countDownLatch.countDown();
-                System.out.println(stringStringConsumerRecord.value());
+                log.info("{}", stringStringConsumerRecord.value());
                 return Mono.empty();
             }
         });
