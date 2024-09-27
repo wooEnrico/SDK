@@ -14,7 +14,6 @@ import reactor.kafka.receiver.ReceiverOptions;
 import reactor.kafka.receiver.ReceiverPartition;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -54,11 +53,13 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
         this.onRevoke = onRevoke != null ? onRevoke : partitions -> log.warn("revoked partitions : {}", partitions);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
-        this.subscribe();
+        if (consumerProperties.isEnabled()) {
+            this.subscribe();
+        }
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (!this.close.compareAndSet(false, true)) {
             return;
         }
@@ -115,7 +116,7 @@ public abstract class ReactorKafkaReceiver<K, V> implements Closeable {
 
     private reactor.kafka.receiver.KafkaReceiver<K, V> createKafkaReceiver(ConsumerProperties properties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
 
-        ReceiverOptions<K, V> receiverOption = ReceiverOptions.<K, V>create(properties.buildProperties())
+        ReceiverOptions<K, V> receiverOption = ReceiverOptions.<K, V>create(properties.getProperties())
                 .withKeyDeserializer(keyDeserializer)
                 .withValueDeserializer(valueDeserializer)
                 .subscription(properties.getTopic())

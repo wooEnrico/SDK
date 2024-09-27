@@ -62,7 +62,9 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
         this.pollExecutor = KafkaUtil.newSingleThreadPoolExecutor(name + "-poll");
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
-        this.subscribe();
+        if (consumerProperties.isEnabled()) {
+            this.subscribe();
+        }
     }
 
     @Override
@@ -70,6 +72,10 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
         if (!this.close.compareAndSet(false, true)) {
             return;
         }
+        this.consumerMap.forEach((key, value) -> {
+            // kafka close is not thread-safe must call by poll thread
+            CompletableFuture.runAsync(key::close, this.pollExecutor).join();
+        });
         this.pollExecutor.shutdown();
         this.threadPoolExecutor.shutdown();
     }
@@ -92,16 +98,17 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
     }
 
     private void subscribe() {
-        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>(this.consumerProperties.buildProperties(), this.keyDeserializer, this.valueDeserializer);
+        org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer = new org.apache.kafka.clients.consumer.KafkaConsumer<K, V>(this.consumerProperties.getProperties(), this.keyDeserializer, this.valueDeserializer);
         kafkaConsumer.subscribe(this.consumerProperties.getTopic(), this.consumerRebalanceListener);
-        final Runnable reConsumerRunnable = () -> this.subscribe(kafkaConsumer);
+        Runnable loopPoll = () -> this.loopPoll(kafkaConsumer);
 
-        CompletableFuture<Void> voidCompletableFuture = CompletableFuture.runAsync(() -> {
-            this.loopPoll(kafkaConsumer);
-        }, this.pollExecutor).whenComplete((unused, throwable) -> {
-            log.error("kafka consumer recreate {}", this.name, throwable);
-            reConsumerRunnable.run();
-        });
+        CompletableFuture<Void> voidCompletableFuture = CompletableFuture.runAsync(loopPoll, this.pollExecutor)
+                .whenComplete((unused, throwable) -> {
+                    if (throwable != null) {
+                        log.error("kafka consumer recreate {}", this.name, throwable);
+                        this.subscribe(kafkaConsumer);
+                    }
+                });
 
         this.consumerMap.put(kafkaConsumer, voidCompletableFuture);
     }

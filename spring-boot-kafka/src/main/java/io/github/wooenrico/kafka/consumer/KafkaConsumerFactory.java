@@ -40,7 +40,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
 
     private void createConsumer(String key, ConsumerProperties properties) throws Exception {
 
-        if (key == null || key.isEmpty() || properties == null || !properties.isEnabled()) {
+        if (key == null || key.isEmpty() || properties == null) {
             return;
         }
 
@@ -53,6 +53,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
 
         if (handler instanceof KafkaHandler) {
             DefaultKafkaHandler kafkaHandler = (DefaultKafkaHandler) handler;
+            log.info("create kafka consumer {}, {}", properties, kafkaHandler);
             for (int i = 0; i < properties.getConcurrency(); i++) {
                 DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, kafkaHandler);
                 this.closeableObjects.add(kafkaConsumer);
@@ -60,6 +61,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
 
         } else if (handler instanceof ReactorKafkaHandler) {
             DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
+            log.info("create reactor kafka consumer {}, {}", properties, reactorKafkaHandler);
             for (int i = 0; i < properties.getConcurrency(); i++) {
                 DefaultReactorKafkaReceiver reactorKafkaReceiver = new DefaultReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
                 this.closeableObjects.add(reactorKafkaReceiver);

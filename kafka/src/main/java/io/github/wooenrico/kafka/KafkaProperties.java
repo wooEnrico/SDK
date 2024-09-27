@@ -2,16 +2,34 @@ package io.github.wooenrico.kafka;
 
 import io.github.wooenrico.kafka.consumer.ConsumerProperties;
 import io.github.wooenrico.kafka.sender.SenderProperties;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 public class KafkaProperties {
 
+    public static SenderProperties LOCAL_SENDER = new SenderProperties() {
+        {
+            setEnabled(true);
+            addProperties(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+            addProperties(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+            addProperties(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        }
+    };
+
+    public static ConsumerProperties LOCAL_CONSUMER = new ConsumerProperties() {
+        {
+            setEnabled(true);
+            addProperties(ConsumerConfig.GROUP_ID_CONFIG, "local-consumer");
+            addProperties(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+            addProperties(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+            addProperties(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        }
+    };
+
     /**
-     * {@link  org.apache.kafka.clients.producer.ProducerConfig}
+     * kafka 生产者配置 {@link  org.apache.kafka.clients.producer.ProducerConfig}
      */
     private Properties commonSenderProperties = new Properties();
     /**

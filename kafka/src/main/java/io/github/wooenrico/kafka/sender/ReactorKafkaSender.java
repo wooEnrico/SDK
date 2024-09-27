@@ -15,12 +15,13 @@ import reactor.kafka.sender.SenderOptions;
 import reactor.kafka.sender.SenderRecord;
 import reactor.kafka.sender.SenderResult;
 
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public abstract class ReactorKafkaSender<K, V, T> implements Disposable {
+public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(ReactorKafkaSender.class);
 
@@ -89,7 +90,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Disposable {
     }
 
     @Override
-    public void dispose() {
+    public void close() {
         this.cache.asMap().forEach((key, value) -> value.dispose());
         this.cache.invalidateAll();
         this.kafkaSender.close();
@@ -175,7 +176,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Disposable {
     }
 
     private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
-        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.buildProperties())
+        SenderOptions<K, V> senderOptions = SenderOptions.<K, V>create(properties.getProperties())
                 .withKeySerializer(keySerializer)
                 .withValueSerializer(valueSerializer)
                 .stopOnError(false)

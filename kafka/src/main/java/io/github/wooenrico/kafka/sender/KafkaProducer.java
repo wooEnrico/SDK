@@ -6,7 +6,6 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
@@ -26,7 +25,7 @@ public abstract class KafkaProducer<K, V> implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.kafkaProducer.close();
     }
 

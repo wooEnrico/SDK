@@ -1,23 +1,11 @@
 package io.github.wooenrico.kafka.sender;
 
 import io.github.wooenrico.kafka.KafkaUtil;
-import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.time.Duration;
 import java.util.Properties;
 
 public class SenderProperties {
-
-    /**
-     * {@link  org.apache.kafka.clients.producer.ProducerConfig}
-     */
-    private final Properties defaultProperties = new Properties() {
-        {
-            put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-            put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-        }
-    };
 
     private Boolean enabled;
 
@@ -74,10 +62,6 @@ public class SenderProperties {
         this.queueSize = queueSize;
     }
 
-    public Properties getDefaultProperties() {
-        return defaultProperties;
-    }
-
     public Duration getSinksEmitTimeout() {
         return sinksEmitTimeout;
     }
@@ -118,9 +102,5 @@ public class SenderProperties {
 
     public void addCommonProperties(Properties commonProperties) {
         this.properties = KafkaUtil.mergeProperties(commonProperties, this.properties);
-    }
-
-    public Properties buildProperties() {
-        return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
     }
 }

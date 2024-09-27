@@ -2,24 +2,12 @@ package io.github.wooenrico.kafka.consumer;
 
 import io.github.wooenrico.kafka.ExecutorConf;
 import io.github.wooenrico.kafka.KafkaUtil;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 
 public class ConsumerProperties {
-
-    /**
-     * kafka 消费者配置 {@link org.apache.kafka.clients.consumer.ConsumerConfig}
-     */
-    private final Properties defaultProperties = new Properties() {
-        {
-            put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-            put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-            put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        }
-    };
 
     private boolean enabled = true;
 
@@ -135,10 +123,6 @@ public class ConsumerProperties {
 
     public void addCommonProperties(Properties commonProperties) {
         this.properties = KafkaUtil.mergeProperties(commonProperties, this.properties);
-    }
-
-    public Properties buildProperties() {
-        return KafkaUtil.mergeProperties(this.defaultProperties, this.properties);
     }
 
     public Double getRate() {

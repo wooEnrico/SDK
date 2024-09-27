@@ -1,5 +1,5 @@
+import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.consumer.*;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
 import org.slf4j.Logger;
@@ -24,7 +24,9 @@ public class TestConsumer {
 
         CountDownLatch countDownLatch = getCountDownLatch();
 
-        ConsumerProperties consumerProperties = getConsumerProperties();
+        ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+        consumerProperties.setTopic(Collections.singletonList("test"));
+        consumerProperties.setRate(10D);
 
         DefaultKafkaConsumer defaultKafkaConsumer = new DefaultKafkaConsumer("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
             @Override
@@ -45,7 +47,9 @@ public class TestConsumer {
 
         CountDownLatch countDownLatch = getCountDownLatch();
 
-        ConsumerProperties consumerProperties = getConsumerProperties();
+        ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+        consumerProperties.setTopic(Collections.singletonList("test"));
+        consumerProperties.setRate(1D);
 
         DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
             @Override
@@ -59,13 +63,5 @@ public class TestConsumer {
         countDownLatch.await();
 
         defaultReactorKafkaReceiver.close();
-    }
-
-    private static ConsumerProperties getConsumerProperties() {
-        ConsumerProperties consumerProperties = new ConsumerProperties();
-        consumerProperties.addProperties(ConsumerConfig.GROUP_ID_CONFIG, "test-group-id");
-        consumerProperties.setTopic(Collections.singletonList("test"));
-        consumerProperties.setRate(100D);
-        return consumerProperties;
     }
 }

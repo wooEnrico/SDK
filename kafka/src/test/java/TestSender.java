@@ -1,8 +1,8 @@
+import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooenrico.kafka.sender.SenderProperties;
 import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.junit.Ignore;
 import org.slf4j.Logger;
@@ -16,18 +16,13 @@ public class TestSender {
 
     private final int count = 100;
 
-    private static SenderProperties getSenderProperties() {
-        SenderProperties senderProperties = new SenderProperties();
-        senderProperties.addProperties(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-        return senderProperties;
-    }
-
     @Ignore
     @org.junit.Test
     public void testReactorSender() throws Exception {
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
-        SenderProperties senderProperties = getSenderProperties();
+        SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
+
         DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, producerRecordSenderResult -> {
             countDownLatch.countDown();
             if (producerRecordSenderResult.exception() != null) {
@@ -42,6 +37,8 @@ public class TestSender {
                 .subscribe();
 
         countDownLatch.await();
+
+        reactorKafkaSender.close();
     }
 
     @Ignore
@@ -50,9 +47,9 @@ public class TestSender {
 
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
-        SenderProperties senderProperties = getSenderProperties();
+        SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
 
-        DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.buildProperties());
+        DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.getProperties());
 
         for (int i = 0; i < count; i++) {
             kafkaProducer.send("test", i + "", new Callback() {
@@ -70,5 +67,7 @@ public class TestSender {
         }
 
         countDownLatch.await();
+
+        kafkaProducer.close();
     }
 }
