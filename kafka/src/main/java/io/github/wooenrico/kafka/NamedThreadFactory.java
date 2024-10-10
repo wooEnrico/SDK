@@ -9,13 +9,22 @@ public class NamedThreadFactory implements ThreadFactory, Serializable {
     private final AtomicInteger threadCount = new AtomicInteger();
     private final ThreadGroup threadGroup;
     private final String threadName;
-
-    private boolean daemon = false;
-    private int threadPriority = 5;
+    private final boolean daemon;
+    private final int threadPriority;
 
     public NamedThreadFactory(String threadName) {
-        this.threadGroup = new ThreadGroup(threadName + "-group");
+        this(threadName, false);
+    }
+
+    public NamedThreadFactory(String threadName, boolean daemon) {
+        this(threadName, daemon, Thread.NORM_PRIORITY);
+    }
+
+    public NamedThreadFactory(String threadName, boolean daemon, int threadPriority) {
+        this.threadGroup = new ThreadGroup(threadName);
         this.threadName = threadName;
+        this.daemon = daemon;
+        this.threadPriority = threadPriority;
     }
 
     public ThreadGroup getThreadGroup() {
@@ -34,26 +43,14 @@ public class NamedThreadFactory implements ThreadFactory, Serializable {
         return threadPriority;
     }
 
-    public void setDaemon(boolean daemon) {
-        this.daemon = daemon;
-    }
-
-    public void setThreadPriority(int threadPriority) {
-        this.threadPriority = threadPriority;
-    }
-
-    public Thread createThread(Runnable runnable) {
-        Thread thread = new Thread(this.threadGroup, runnable, this.nextThreadName());
-        thread.setPriority(this.threadPriority);
-        thread.setDaemon(this.daemon);
-        return thread;
-    }
-
     protected String nextThreadName() {
         return this.threadName + "-" + this.threadCount.incrementAndGet();
     }
 
     public Thread newThread(Runnable runnable) {
-        return this.createThread(runnable);
+        Thread thread = new Thread(this.threadGroup, runnable, this.nextThreadName());
+        thread.setPriority(this.threadPriority);
+        thread.setDaemon(this.daemon);
+        return thread;
     }
 }
