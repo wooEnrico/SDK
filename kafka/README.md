@@ -36,45 +36,33 @@ if dependency omitted for duplicate, you can use below dependency instead.
 </dependencies>
 ```
 
-## spring boot application import
-
-```
-@AutoKafka
-```
-
-### example
-
-```java
-
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-
-@SpringBootApplication
-@AutoKafka
-public class MyApplication {
-    public static void main(String[] args) {
-        new SpringApplicationBuilder(MyApplication.class)
-                .web(WebApplicationType.NONE)
-                .run(args);
-    }
-}
-```
-
-## consumer handler implements
+## consumer
 
 ### example1
 
 ```java
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooenrico.kafka.handler.DefaultKafkaHandler;
+@org.junit.Test
+public void testConsumer() throws Exception {
 
-@Service("myHandler")
-public class MyHandler implements DefaultKafkaHandler {
-    @Override
-    public void accept(ConsumerRecord<String, String> record) {
-        //TODO
+
+    CountDownLatch countDownLatch = new CountDownLatch(100);
+
+    // kafka consumer properties
+    ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+    consumerProperties.setTopic(Collections.singletonList("test"));
+
+    // record handler
+    Consumer<ConsumerRecord<String, String>> handler = stringStringConsumerRecord -> {
+        countDownLatch.countDown();
+        log.info("{}", stringStringConsumerRecord.value());
+    };
+
+    // consumer
+    try (DefaultKafkaConsumer defaultKafkaConsumer = new DefaultKafkaConsumer("test1", consumerProperties, handler)) {
+        countDownLatch.await();
+    } catch (Exception e) {
+        log.error("consumer kafka record error", e);
     }
 }
 ```
@@ -82,98 +70,96 @@ public class MyHandler implements DefaultKafkaHandler {
 ### example2
 
 ```java
-import reactor.core.publisher.Mono;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooenrico.kafka.handler.DefaultReactorKafkaHandler;
 
-@Service("myReactorHandler")
-public class MyReactorHandler implements DefaultReactorKafkaHandler {
-    @Override
-    public Mono<Void> apply(ConsumerRecord<String, String> record) {
-        //TODO
+@org.junit.Test
+public void testReactorConsumer() throws Exception {
+
+    CountDownLatch countDownLatch = new CountDownLatch(100);
+
+    // kafka consumer properties
+    ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+    consumerProperties.setTopic(Collections.singletonList("test"));
+    // record handler
+    Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {
+        countDownLatch.countDown();
+        log.info("{}", stringStringConsumerRecord.value());
         return Mono.empty();
+    };
+
+    // reactor consumer
+    try (DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, handler)) {
+        countDownLatch.await();
+    } catch (Exception e) {
+        log.error("reactor consumer kafka record error", e);
     }
 }
 ```
 
-## sender bean define & autowired
+## sender
 
-### define
-
-```java
-import io.github.wooenrico.kafka.KafkaProperties;
-import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
-
-@Configuration
-@EnableConfigurationProperties(KafkaProperties.class)
-public class MyConfiguration {
-    @Bean("testReactorKafkaSender")
-    @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
-    public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultReactorKafkaSender(kafkaProperties.getSenderProperties("test"));
-    }
-
-    @Bean("test2KafkaProducer")
-    @ConditionalOnProperty(name = "kafka.sender.test2.enabled", matchIfMissing = false, havingValue = "true")
-    public DefaultKafkaProducer reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultKafkaProducer(kafkaProperties.getSenderProperties("test2").getProperties());
-    }
-}
-```
-
-### autowired
+### example1
 
 ```java
 
-import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
+@org.junit.Test
+public void testSender() throws Exception {
 
-@Service
-public class SenderTest {
-    @Autowired
-    private DefaultReactorKafkaSender reactorKafkaSender;
-    @Autowired
-    @Qualifier("testReactorKafkaSender")
-    private DefaultReactorKafkaSender testReactorKafkaSender;
-    @Autowired
-    @Qualifier("test2KafkaProducer")
-    private DefaultKafkaProducer kafkaProducer;
+    // sender properties
+    SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
+
+    // sender
+    try (DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.getProperties())) {
+        for (int i = 0; i < 100; i++) {
+            kafkaProducer.send("test", i + "", (metadata, exception) -> {
+                if (exception != null) {
+                    log.error("send error", exception);
+                } else {
+                    log.info("send complete {}", metadata);
+                }
+            });
+        }
+    } catch (Exception e) {
+        log.error("send error", e);
+    }
 }
 ```
 
-## properties
+### example2
 
-```properties
-########################################################################################################################
-## TODO START auto kafka configuration
-########################################################################################################################
-## kafka 自动配置选项
-kafka.configuration.enabled=true
-## TODO kafka consumer conf
-## kafka consumer 通用配置选项
-kafka.common-consumer-properties.bootstrap.servers=127.0.0.1:9092
-### example-1 简单配置，myHandler是消费者名称又是处理器名称
-kafka.consumer.myHandler.enabled=true
-kafka.consumer.myHandler.properties.group.id=group1
-kafka.consumer.myHandler.topic=test1
-kafka.consumer.myHandler.concurrency=1
-### example-2 自定义消费者名称customName, 并配置处理器名称myReactorHandler
-kafka.consumer.customName.enabled=true
-kafka.consumer.customName.handlerBeanName=myReactorHandler
-kafka.consumer.customName.properties.bootstrap.servers=127.0.0.1:9093
-kafka.consumer.customName.properties.group.id=group2
-kafka.consumer.customName.topic=test2
-kafka.consumer.customName.concurrency=1
-## TODO kafka sender conf
-## kafka sender 通用配置选项
-kafka.common-sender-properties.bootstrap.servers=127.0.0.1:9092
-## kafka sender 默认spring bean配置选项
-kafka.sender.primary.enabled=true
-## kafka sender 自定义spring bean配置选项
-kafka.sender.test.enabled=true
-kafka.sender.test.properties.bootstrap.servers=127.0.0.1:9093
-########################################################################################################################
-## TODO END auto kafka configuration
-########################################################################################################################
+```java
+
+@org.junit.Test
+public void testReactorSender() throws Exception {
+
+    int count = 100;
+
+    CountDownLatch countDownLatch = new CountDownLatch(count);
+
+    // sender properties
+    SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
+
+    // result consumer
+    Consumer<SenderResult<ProducerRecord<String, String>>> senderResultConsumer = producerRecordSenderResult -> {
+        countDownLatch.countDown();
+        if (producerRecordSenderResult.exception() != null) {
+            log.error("send error {}", producerRecordSenderResult.correlationMetadata(), producerRecordSenderResult.exception());
+        } else {
+            log.info("send complete {}", producerRecordSenderResult.correlationMetadata());
+        }
+    };
+
+    // reactor sender
+    DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, senderResultConsumer);
+
+    Flux.range(0, count)
+            .flatMap(integer -> reactorKafkaSender.send("test", integer.toString()))
+            .doOnError(throwable -> {
+                log.error("send error", throwable);
+            })
+            .subscribe();
+
+    countDownLatch.await();
+
+    reactorKafkaSender.close();
+}
 ```

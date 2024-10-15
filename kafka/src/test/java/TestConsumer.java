@@ -14,54 +14,52 @@ import java.util.function.Function;
 public class TestConsumer {
     private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
 
-    private CountDownLatch getCountDownLatch() {
-        return new CountDownLatch(100);
-    }
-
     @Ignore
     @org.junit.Test
     public void testConsumer() throws Exception {
 
-        CountDownLatch countDownLatch = getCountDownLatch();
 
+        CountDownLatch countDownLatch = new CountDownLatch(100);
+
+        // kafka consumer properties
         ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
-        consumerProperties.setRate(10D);
 
-        DefaultKafkaConsumer defaultKafkaConsumer = new DefaultKafkaConsumer("test1", consumerProperties, new Consumer<ConsumerRecord<String, String>>() {
-            @Override
-            public void accept(ConsumerRecord<String, String> stringStringConsumerRecord) {
-                countDownLatch.countDown();
-                log.info("{}", stringStringConsumerRecord.value());
-            }
-        });
+        // record handler
+        Consumer<ConsumerRecord<String, String>> handler = stringStringConsumerRecord -> {
+            countDownLatch.countDown();
+            log.info("{}", stringStringConsumerRecord.value());
+        };
 
-        countDownLatch.await();
-
-        defaultKafkaConsumer.close();
+        // consumer
+        try (DefaultKafkaConsumer defaultKafkaConsumer = new DefaultKafkaConsumer("test1", consumerProperties, handler)) {
+            countDownLatch.await();
+        } catch (Exception e) {
+            log.error("consumer kafka record error", e);
+        }
     }
 
     @Ignore
     @org.junit.Test
     public void testReactorConsumer() throws Exception {
 
-        CountDownLatch countDownLatch = getCountDownLatch();
+        CountDownLatch countDownLatch = new CountDownLatch(100);
 
+        // kafka consumer properties
         ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
-        consumerProperties.setRate(1D);
+        // record handler
+        Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {
+            countDownLatch.countDown();
+            log.info("{}", stringStringConsumerRecord.value());
+            return Mono.empty();
+        };
 
-        DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, new Function<ConsumerRecord<String, String>, Mono<Void>>() {
-            @Override
-            public Mono<Void> apply(ConsumerRecord<String, String> stringStringConsumerRecord) {
-                countDownLatch.countDown();
-                log.info("{}", stringStringConsumerRecord.value());
-                return Mono.empty();
-            }
-        });
-
-        countDownLatch.await();
-
-        defaultReactorKafkaReceiver.close();
+        // reactor consumer
+        try (DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, handler)) {
+            countDownLatch.await();
+        } catch (Exception e) {
+            log.error("reactor consumer kafka record error", e);
+        }
     }
 }
