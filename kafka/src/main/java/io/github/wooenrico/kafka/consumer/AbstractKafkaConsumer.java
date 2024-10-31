@@ -1,9 +1,7 @@
 package io.github.wooenrico.kafka.consumer;
 
-import com.google.common.util.concurrent.RateLimiter;
 import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -14,15 +12,14 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
-public abstract class KafkaConsumer<K, V> implements Closeable {
 
-    private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
+public abstract class AbstractKafkaConsumer<K, V> implements Closeable {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractKafkaConsumer.class);
 
     protected final String name;
     protected final ConsumerProperties consumerProperties;
-    protected final Consumer<ConsumerRecord<K, V>> consumer;
     protected final Deserializer<K> keyDeserializer;
     protected final Deserializer<V> valueDeserializer;
 
@@ -30,17 +27,10 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
     private final AtomicBoolean close = new AtomicBoolean(false);
     private final ThreadPoolExecutor pollExecutor;
     private final ConsumerRebalanceListener consumerRebalanceListener;
-    private final ThreadPoolExecutor threadPoolExecutor;
-    private final RateLimiter rateLimiter;
 
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer) {
-        this(name, consumerProperties, consumer, keyDeserializer, valueDeserializer, null);
-    }
-
-    public KafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<K, V>> consumer, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         this.name = name;
         this.consumerProperties = consumerProperties;
-        this.consumer = consumer;
         this.keyDeserializer = keyDeserializer;
         this.valueDeserializer = valueDeserializer;
         this.consumerRebalanceListener = consumerRebalanceListener != null ? consumerRebalanceListener : new ConsumerRebalanceListener() {
@@ -59,9 +49,8 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
                 log.info("lost partitions {}", partitions.toString());
             }
         };
-        this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
         this.pollExecutor = KafkaUtil.newSingleThreadPoolExecutor(name + "-poll");
-        this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
+
         if (consumerProperties.isEnabled()) {
             this.subscribe();
         }
@@ -77,7 +66,6 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
             CompletableFuture.runAsync(key::close, this.pollExecutor).join();
         });
         this.pollExecutor.shutdown();
-        this.threadPoolExecutor.shutdown();
     }
 
     private void subscribe(org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer) {
@@ -119,23 +107,10 @@ public abstract class KafkaConsumer<K, V> implements Closeable {
             if (records == null || records.isEmpty()) {
                 continue;
             }
-            for (ConsumerRecord<K, V> record : records) {
-                this.executorHandleRecordWithRateLimiter(record);
-            }
+            this.handle(records);
         }
         kafkaConsumer.close();
     }
 
-    private void executorHandleRecordWithRateLimiter(ConsumerRecord<K, V> record) {
-        this.threadPoolExecutor.execute(() -> {
-            try {
-                if (this.rateLimiter != null) {
-                    this.rateLimiter.acquire();
-                }
-                this.consumer.accept(record);
-            } catch (Exception e) {
-                log.error("handle error record : {}", record, e);
-            }
-        });
-    }
+    protected abstract void handle(ConsumerRecords<K, V> records);
 }

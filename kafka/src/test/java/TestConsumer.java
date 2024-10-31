@@ -56,7 +56,7 @@ public class TestConsumer {
         };
 
         // reactor consumer
-        try (DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, handler)) {
+        try (DefaultKafkaReceiver defaultReactorKafkaReceiver = new DefaultKafkaReceiver("reactor-test1", consumerProperties, handler)) {
             countDownLatch.await();
         } catch (Exception e) {
             log.error("reactor consumer kafka record error", e);

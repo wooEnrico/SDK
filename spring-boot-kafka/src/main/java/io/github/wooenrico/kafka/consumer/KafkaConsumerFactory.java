@@ -63,7 +63,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
             DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
             log.info("create reactor kafka consumer {}, {}", properties, reactorKafkaHandler);
             for (int i = 0; i < properties.getConcurrency(); i++) {
-                DefaultReactorKafkaReceiver reactorKafkaReceiver = new DefaultReactorKafkaReceiver(key + i, properties, reactorKafkaHandler);
+                DefaultKafkaReceiver reactorKafkaReceiver = new DefaultKafkaReceiver(key + i, properties, reactorKafkaHandler);
                 this.closeableObjects.add(reactorKafkaReceiver);
             }
         } else {
