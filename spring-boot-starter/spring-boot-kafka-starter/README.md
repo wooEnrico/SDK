@@ -83,7 +83,6 @@ import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 
 @Configuration
-@EnableConfigurationProperties(KafkaProperties.class)
 public class MyConfiguration {
     @Bean("testReactorKafkaSender")
     @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")

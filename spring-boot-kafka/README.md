@@ -2,14 +2,12 @@
 
 ## dependency
 
-you can use in spring boot 3.x
-
 ```xml
 
 <dependencies>
     <dependency>
         <groupId>io.github.wooenrico</groupId>
-        <artifactId>spring-boot3-kafka-starter</artifactId>
+        <artifactId>spring-boot-kafka</artifactId>
         <version>1.0.7</version>
     </dependency>
 </dependencies>
@@ -79,11 +77,14 @@ public class MyReactorHandler implements DefaultReactorKafkaHandler {
 
 ```java
 import io.github.wooenrico.kafka.KafkaProperties;
+import io.github.wooenrico.kafka.annotation.AutoKafka;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 
 @Configuration
+@AutoKafka
 public class MyConfiguration {
+    
     @Bean("testReactorKafkaSender")
     @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
     public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
