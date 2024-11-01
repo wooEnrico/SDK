@@ -8,7 +8,7 @@
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-kafka</artifactId>
-        <version>1.0.7</version>
+        <version>1.0.8</version>
     </dependency>
 </dependencies>
 ```

@@ -10,7 +10,7 @@ you can use in spring boot 2.x
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-kafka-starter</artifactId>
-        <version>1.0.7</version>
+        <version>1.0.8</version>
     </dependency>
 </dependencies>
 ```

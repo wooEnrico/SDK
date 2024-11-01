@@ -8,7 +8,7 @@
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>kafka</artifactId>
-        <version>1.0.7</version>
+        <version>1.0.8</version>
     </dependency>
 </dependencies>
 ```
@@ -87,7 +87,7 @@ public void testReactorConsumer() throws Exception {
     };
 
     // reactor consumer
-    try (DefaultReactorKafkaReceiver defaultReactorKafkaReceiver = new DefaultReactorKafkaReceiver("reactor-test1", consumerProperties, handler)) {
+    try (DefaultKafkaReceiver defaultKafkaReceiver = new DefaultKafkaReceiver("reactor-test1", consumerProperties, handler)) {
         countDownLatch.await();
     } catch (Exception e) {
         log.error("reactor consumer kafka record error", e);
