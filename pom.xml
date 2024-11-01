@@ -6,7 +6,7 @@
 
     <groupId>io.github.wooenrico</groupId>
     <artifactId>sdk-parent</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9-SNAPSHOT</version>
     <modules>
         <module>tools</module>
         <module>utils</module>
