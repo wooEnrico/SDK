@@ -5,11 +5,14 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.Deserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 public abstract class AbstractExecutorKafkaConsumer<K, V> extends AbstractKafkaConsumer<K, V> {
 
+    private static final Logger log = LoggerFactory.getLogger(AbstractExecutorKafkaConsumer.class);
     private final ThreadPoolExecutor threadPoolExecutor;
 
     public AbstractExecutorKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
@@ -26,7 +29,13 @@ public abstract class AbstractExecutorKafkaConsumer<K, V> extends AbstractKafkaC
     @Override
     protected void handle(ConsumerRecords<K, V> records) {
         for (ConsumerRecord<K, V> record : records) {
-            this.threadPoolExecutor.execute(() -> this.executorHandle(record));
+            this.threadPoolExecutor.execute(() -> {
+                try {
+                    this.executorHandle(record);
+                } catch (Exception e) {
+                    log.error("executorHandle error", e);
+                }
+            });
         }
     }
 

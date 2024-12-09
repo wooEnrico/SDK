@@ -107,7 +107,11 @@ public abstract class AbstractKafkaConsumer<K, V> implements Closeable {
             if (records == null || records.isEmpty()) {
                 continue;
             }
-            this.handle(records);
+            try {
+                this.handle(records);
+            } catch (Exception e) {
+                log.error("kafka consumer handle error", e);
+            }
         }
         kafkaConsumer.close();
     }

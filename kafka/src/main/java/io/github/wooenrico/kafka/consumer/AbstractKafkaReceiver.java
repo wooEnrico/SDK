@@ -79,7 +79,12 @@ public abstract class AbstractKafkaReceiver<K, V> implements Closeable {
                     log.error("kafka receiver recreate {}", this.name, e);
                     reConsumerRunnable.run();
                 })
-                .concatMap(this::handle)
+                .concatMap(consumerRecordFlux -> {
+                    return this.handle(consumerRecordFlux).onErrorResume(throwable -> {
+                        log.error("kafka receiver handle error", throwable);
+                        return Flux.empty();
+                    });
+                })
                 .subscribe();
 
         this.subscribers.put(kafkaReceiver, disposable);
