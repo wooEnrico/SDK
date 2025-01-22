@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
@@ -14,7 +15,7 @@ import java.io.Closeable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware {
+public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware, SmartInitializingSingleton {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerFactory.class);
 
     private final Set<Closeable> closeableObjects = new HashSet<>();
@@ -36,6 +37,11 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
             ConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
             this.createConsumer(key, consumerProperties);
         }
+    }
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        log.info("kafka consumer factory initialized");
     }
 
     private void createConsumer(String key, ConsumerProperties properties) throws Exception {
