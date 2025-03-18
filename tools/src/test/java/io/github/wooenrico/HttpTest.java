@@ -6,7 +6,8 @@ import io.github.wooenrico.http.common.HttpRequest;
 import io.github.wooenrico.http.common.HttpRequestBuilder;
 import io.github.wooenrico.http.common.HttpResponse;
 import io.github.wooenrico.http.common.Method;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 
 import java.io.IOException;
 
