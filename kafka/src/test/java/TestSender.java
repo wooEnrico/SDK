@@ -1,7 +1,7 @@
-import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import io.github.wooenrico.kafka.sender.SenderProperties;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Ignore;
 import org.slf4j.Logger;
@@ -15,6 +15,14 @@ import java.util.function.Consumer;
 public class TestSender {
     private static final Logger log = LoggerFactory.getLogger(TestSender.class);
 
+    public static SenderProperties LOCAL_SENDER = new SenderProperties() {
+        {
+            setEnabled(true);
+            addProperties(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+            addProperties(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+            addProperties(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        }
+    };
     @Ignore
     @org.junit.Test
     public void testReactorSender() throws Exception {
@@ -24,7 +32,7 @@ public class TestSender {
         CountDownLatch countDownLatch = new CountDownLatch(count);
 
         // sender properties
-        SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
+        SenderProperties senderProperties = LOCAL_SENDER;
 
         // result consumer
         Consumer<SenderResult<ProducerRecord<String, String>>> senderResultConsumer = producerRecordSenderResult -> {
@@ -56,7 +64,7 @@ public class TestSender {
     public void testSender() throws Exception {
 
         // sender properties
-        SenderProperties senderProperties = KafkaProperties.LOCAL_SENDER;
+        SenderProperties senderProperties = LOCAL_SENDER;
 
         // sender
         try (DefaultKafkaProducer kafkaProducer = new DefaultKafkaProducer(senderProperties.getProperties())) {

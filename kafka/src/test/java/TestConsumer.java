@@ -1,5 +1,7 @@
-import io.github.wooenrico.kafka.KafkaProperties;
-import io.github.wooenrico.kafka.consumer.*;
+import io.github.wooenrico.kafka.consumer.ConsumerProperties;
+import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
+import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
 import org.slf4j.Logger;
@@ -14,15 +16,24 @@ import java.util.function.Function;
 public class TestConsumer {
     private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
 
+    public static ConsumerProperties LOCAL_CONSUMER = new ConsumerProperties() {
+        {
+            setEnabled(true);
+            addProperties(ConsumerConfig.GROUP_ID_CONFIG, "local-consumer");
+            addProperties(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+            addProperties(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+            addProperties(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        }
+    };
+
     @Ignore
     @org.junit.Test
     public void testConsumer() throws Exception {
 
-
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+        ConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
 
         // record handler
@@ -46,7 +57,7 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        ConsumerProperties consumerProperties = KafkaProperties.LOCAL_CONSUMER;
+        ConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
         // record handler
         Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {
