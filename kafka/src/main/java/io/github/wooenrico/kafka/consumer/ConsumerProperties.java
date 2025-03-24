@@ -1,22 +1,30 @@
 package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooenrico.kafka.ExecutorConf;
 import io.github.wooenrico.kafka.KafkaUtil;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * 消费者配置
+ */
 public class ConsumerProperties {
-
-    private boolean enabled = true;
-
     /**
-     * 处理器名
+     * 是否启用
      */
-    private String handlerBeanName;
+    private boolean enabled = true;
+    /**
+     * 消费者配置
+     */
     private Properties properties = new Properties();
+    /**
+     * 拉取超时时间
+     */
     private Duration pollTimeout = Duration.ofMillis(1000);
+    /**
+     * 关闭超时时间
+     */
     private Duration closeTimeout = Duration.ofMillis(10000);
 
     /**
@@ -29,27 +37,15 @@ public class ConsumerProperties {
      */
     private List<String> topic;
 
-    /**
-     * 线程池配置
-     */
-    private ExecutorConf executor = new ExecutorConf();
-
-    /**
-     * 消费速率
-     */
-    private Double rate;
-
     @Override
     public String toString() {
         return "ConsumerProperties{" +
                 "enabled=" + enabled +
-                ", handlerBeanName='" + handlerBeanName + '\'' +
                 ", properties=" + properties +
                 ", pollTimeout=" + pollTimeout +
                 ", closeTimeout=" + closeTimeout +
                 ", concurrency=" + concurrency +
                 ", topic=" + topic +
-                ", executor=" + executor +
                 '}';
     }
 
@@ -59,14 +55,6 @@ public class ConsumerProperties {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public String getHandlerBeanName() {
-        return handlerBeanName;
-    }
-
-    public void setHandlerBeanName(String handlerBeanName) {
-        this.handlerBeanName = handlerBeanName;
     }
 
     public Properties getProperties() {
@@ -109,27 +97,11 @@ public class ConsumerProperties {
         this.topic = topic;
     }
 
-    public ExecutorConf getExecutor() {
-        return executor;
-    }
-
-    public void setExecutor(ExecutorConf executor) {
-        this.executor = executor;
-    }
-
     public void addProperties(String key, Object value) {
         this.properties.put(key, value);
     }
 
     public void addCommonProperties(Properties commonProperties) {
         this.properties = KafkaUtil.mergeProperties(commonProperties, this.properties);
-    }
-
-    public Double getRate() {
-        return rate;
-    }
-
-    public void setRate(Double rate) {
-        this.rate = rate;
     }
 }

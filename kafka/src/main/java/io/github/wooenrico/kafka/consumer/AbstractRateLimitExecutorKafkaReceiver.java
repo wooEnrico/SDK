@@ -13,7 +13,7 @@ public abstract class AbstractRateLimitExecutorKafkaReceiver<K, V> extends Abstr
 
     private final RateLimiter rateLimiter;
 
-    public AbstractRateLimitExecutorKafkaReceiver(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
+    public AbstractRateLimitExecutorKafkaReceiver(String name, RateLimitExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, onAssign, onRevoke);
         this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
     }

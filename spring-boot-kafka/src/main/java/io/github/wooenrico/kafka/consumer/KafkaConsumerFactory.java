@@ -1,5 +1,6 @@
 package io.github.wooenrico.kafka.consumer;
 
+import io.github.wooenrico.kafka.BeanNameRateLimitExecutorConsumerProperties;
 import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.handler.*;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
     @Override
     public void afterPropertiesSet() throws Exception {
         for (String key : this.kafkaProperties.getConsumerSet()) {
-            ConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
+            BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
             this.createConsumer(key, consumerProperties);
         }
     }
@@ -44,7 +45,7 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
         log.info("kafka consumer factory initialized");
     }
 
-    private void createConsumer(String key, ConsumerProperties properties) throws Exception {
+    private void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception {
 
         if (key == null || key.isEmpty() || properties == null) {
             return;

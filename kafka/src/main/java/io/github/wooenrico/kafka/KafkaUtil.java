@@ -1,6 +1,7 @@
 package io.github.wooenrico.kafka;
 
 import io.github.wooenrico.kafka.consumer.ConsumerProperties;
+import io.github.wooenrico.kafka.consumer.ExecutorConsumerProperties;
 
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -31,7 +32,7 @@ public final class KafkaUtil {
                 new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    public static ThreadPoolExecutor newThreadPoolExecutor(String name, ConsumerProperties consumerProperties) {
+    public static ThreadPoolExecutor newThreadPoolExecutor(String name, ExecutorConsumerProperties consumerProperties) {
         NamedThreadFactory namedThreadFactory = new NamedThreadFactory(name);
         return KafkaUtil.newThreadPoolExecutor(consumerProperties.getExecutor(), namedThreadFactory);
     }

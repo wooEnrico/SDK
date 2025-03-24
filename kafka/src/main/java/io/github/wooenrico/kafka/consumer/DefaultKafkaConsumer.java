@@ -10,11 +10,11 @@ public class DefaultKafkaConsumer extends AbstractRateLimitExecutorKafkaConsumer
 
     private final Consumer<ConsumerRecord<String, String>> consumer;
 
-    public DefaultKafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer) {
+    public DefaultKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer) {
         this(name, consumerProperties, consumer, null);
     }
 
-    public DefaultKafkaConsumer(String name, ConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public DefaultKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Consumer<ConsumerRecord<String, String>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, new StringDeserializer(), new StringDeserializer(), consumerRebalanceListener);
         this.consumer = consumer;
     }

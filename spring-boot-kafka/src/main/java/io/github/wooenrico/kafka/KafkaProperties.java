@@ -1,6 +1,5 @@
 package io.github.wooenrico.kafka;
 
-import io.github.wooenrico.kafka.consumer.ConsumerProperties;
 import io.github.wooenrico.kafka.sender.SenderProperties;
 
 import java.util.Map;
@@ -18,9 +17,15 @@ public class KafkaProperties {
      */
     private Properties commonConsumerProperties = new Properties();
 
+    /**
+     * 自定义发送者配置
+     */
     private Map<String, SenderProperties> sender = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-    private Map<String, ConsumerProperties> consumer = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    /**
+     * 自定义消费者配置
+     */
+    private Map<String, BeanNameRateLimitExecutorConsumerProperties> consumer = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public Properties getCommonSenderProperties() {
         return commonSenderProperties;
@@ -46,11 +51,11 @@ public class KafkaProperties {
         this.sender = sender;
     }
 
-    public Map<String, ConsumerProperties> getConsumer() {
+    public Map<String, BeanNameRateLimitExecutorConsumerProperties> getConsumer() {
         return consumer;
     }
 
-    public void setConsumer(Map<String, ConsumerProperties> consumer) {
+    public void setConsumer(Map<String, BeanNameRateLimitExecutorConsumerProperties> consumer) {
         this.consumer = consumer;
     }
 
@@ -70,8 +75,8 @@ public class KafkaProperties {
         return consumer.keySet();
     }
 
-    public ConsumerProperties getConsumerProperties(String key) {
-        ConsumerProperties consumerProperties = this.consumer.get(key);
+    public BeanNameRateLimitExecutorConsumerProperties getConsumerProperties(String key) {
+        BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.consumer.get(key);
         if (consumerProperties != null) {
             consumerProperties.addCommonProperties(this.commonConsumerProperties);
         }

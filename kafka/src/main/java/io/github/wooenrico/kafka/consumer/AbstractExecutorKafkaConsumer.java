@@ -15,7 +15,7 @@ public abstract class AbstractExecutorKafkaConsumer<K, V> extends AbstractKafkaC
     private static final Logger log = LoggerFactory.getLogger(AbstractExecutorKafkaConsumer.class);
     private final ThreadPoolExecutor threadPoolExecutor;
 
-    public AbstractExecutorKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractExecutorKafkaConsumer(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
     }

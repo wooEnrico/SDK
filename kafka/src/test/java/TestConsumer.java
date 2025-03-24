@@ -1,6 +1,6 @@
-import io.github.wooenrico.kafka.consumer.ConsumerProperties;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
+import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.Ignore;
@@ -16,7 +16,7 @@ import java.util.function.Function;
 public class TestConsumer {
     private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
 
-    public static ConsumerProperties LOCAL_CONSUMER = new ConsumerProperties() {
+    public static RateLimitExecutorConsumerProperties LOCAL_CONSUMER = new RateLimitExecutorConsumerProperties() {
         {
             setEnabled(true);
             addProperties(ConsumerConfig.GROUP_ID_CONFIG, "local-consumer");
@@ -33,7 +33,7 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        ConsumerProperties consumerProperties = LOCAL_CONSUMER;
+        RateLimitExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
 
         // record handler
@@ -57,7 +57,7 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        ConsumerProperties consumerProperties = LOCAL_CONSUMER;
+        RateLimitExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
         // record handler
         Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {

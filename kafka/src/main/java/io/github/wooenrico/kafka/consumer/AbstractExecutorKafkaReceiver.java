@@ -19,7 +19,7 @@ public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaR
     private static final Logger log = LoggerFactory.getLogger(AbstractExecutorKafkaReceiver.class);
     private final ThreadPoolExecutor threadPoolExecutor;
 
-    public AbstractExecutorKafkaReceiver(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
+    public AbstractExecutorKafkaReceiver(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, onAssign, onRevoke);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
     }

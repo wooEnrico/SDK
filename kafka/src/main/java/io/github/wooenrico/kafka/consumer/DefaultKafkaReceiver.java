@@ -13,11 +13,11 @@ public class DefaultKafkaReceiver extends AbstractRateLimitExecutorKafkaReceiver
 
     private final Function<ConsumerRecord<String, String>, Mono<Void>> consumerRecordMonoFunction;
 
-    public DefaultKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer) {
+    public DefaultKafkaReceiver(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer) {
         this(name, consumerProperties, consumer, null, null);
     }
 
-    public DefaultKafkaReceiver(String name, ConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
+    public DefaultKafkaReceiver(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
         super(name, consumerProperties, new StringDeserializer(), new StringDeserializer(), onAssign, onRevoke);
         this.consumerRecordMonoFunction = consumer;
     }
