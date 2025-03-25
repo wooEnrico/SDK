@@ -231,10 +231,11 @@
                     <artifactId>maven-project-info-reports-plugin</artifactId>
                     <version>3.0.0</version>
                 </plugin>
+                <!-- https://mvnrepository.com/artifact/org.jacoco/jacoco-maven-plugin -->
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.6</version>
+                    <version>0.8.12</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
