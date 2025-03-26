@@ -81,17 +81,19 @@ public abstract class KafkaProducer<K, V> implements Closeable {
 
 
     /**
-     * @param topic 主题topic
-     * @param value 数据
+     * @param topic    主题topic
+     * @param value    数据
+     * @param callback 回调
      */
     public void send(String topic, V value, Callback callback) {
         this.send(topic, null, value, callback);
     }
 
     /**
-     * @param topic 主题topic
-     * @param key   分区key
-     * @param value 数据
+     * @param topic    主题topic
+     * @param key      分区key
+     * @param value    数据
+     * @param callback 回调
      */
     public void send(String topic, K key, V value, Callback callback) {
         this.send(topic, null, key, value, callback);
@@ -102,6 +104,7 @@ public abstract class KafkaProducer<K, V> implements Closeable {
      * @param partition 分区ID
      * @param key       分区key
      * @param value     数据
+     * @param callback  回调
      */
     public void send(String topic, Integer partition, K key, V value, Callback callback) {
         this.send(topic, partition, null, key, value, callback);
@@ -113,6 +116,7 @@ public abstract class KafkaProducer<K, V> implements Closeable {
      * @param timestamp 时间戳
      * @param key       分区key
      * @param value     数据
+     * @param callback  回调
      */
     public void send(String topic, Integer partition, Long timestamp, K key, V value, Callback callback) {
         this.send(new ProducerRecord<>(topic, partition, timestamp, key, value), callback);

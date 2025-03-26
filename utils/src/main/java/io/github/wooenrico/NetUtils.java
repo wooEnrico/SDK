@@ -7,6 +7,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 网络工具类
+ */
 public final class NetUtils {
 
     /**

@@ -4,6 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * InputStream Util.
+ */
 public final class InputStreamUtil {
 
     /**
