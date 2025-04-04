@@ -23,14 +23,11 @@
         <module>spring-boot3-kafka-starter</module>
     </modules>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.github.wooenrico</groupId>
-                <artifactId>spring-boot-kafka</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
+    <dependencies>
+        <dependency>
+            <groupId>io.github.wooenrico</groupId>
+            <artifactId>spring-boot-kafka</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

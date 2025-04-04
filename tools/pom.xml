@@ -15,10 +15,12 @@
         <dependency>
             <groupId>io.github.wooenrico</groupId>
             <artifactId>version</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.wooenrico</groupId>
             <artifactId>utils</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

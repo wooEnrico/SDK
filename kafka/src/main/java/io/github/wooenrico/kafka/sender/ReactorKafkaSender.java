@@ -3,8 +3,6 @@ package io.github.wooenrico.kafka.sender;
 import com.github.benmanes.caffeine.cache.*;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serializer;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +64,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
     private LoadingCache<Thread, SinksSendToKafkaSubscriber<K, V, T>> getLoadingCache() {
         RemovalListener<Thread, SinksSendToKafkaSubscriber<K, V, T>> removalListener = new RemovalListener<Thread, SinksSendToKafkaSubscriber<K, V, T>>() {
             @Override
-            public void onRemoval(@Nullable Thread thread, @Nullable SinksSendToKafkaSubscriber<K, V, T> kvtSinksSendToKafkaSubscriber, @NonNull RemovalCause removalCause) {
+            public void onRemoval(Thread thread, SinksSendToKafkaSubscriber<K, V, T> kvtSinksSendToKafkaSubscriber, RemovalCause removalCause) {
                 log.debug("reactor kafka sinks remove for {}, {}, {}", thread, kvtSinksSendToKafkaSubscriber, removalCause);
                 if (kvtSinksSendToKafkaSubscriber != null) {
                     kvtSinksSendToKafkaSubscriber.dispose();
@@ -81,7 +79,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
 
         CacheLoader<Thread, SinksSendToKafkaSubscriber<K, V, T>> cacheLoader = new CacheLoader<Thread, SinksSendToKafkaSubscriber<K, V, T>>() {
             @Override
-            public SinksSendToKafkaSubscriber<K, V, T> load(@NonNull Thread thread) {
+            public SinksSendToKafkaSubscriber<K, V, T> load(Thread thread) {
                 return newSinksSendToKafkaSubscriber(thread);
             }
         };
