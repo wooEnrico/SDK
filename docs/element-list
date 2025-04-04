@@ -1,0 +1,9 @@
+io.github.wooenrico
+io.github.wooenrico.http.common
+io.github.wooenrico.http.URLConnection
+io.github.wooenrico.kafka
+io.github.wooenrico.kafka.annotation
+io.github.wooenrico.kafka.configuration
+io.github.wooenrico.kafka.consumer
+io.github.wooenrico.kafka.handler
+io.github.wooenrico.kafka.sender
