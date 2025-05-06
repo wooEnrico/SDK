@@ -5,13 +5,15 @@ import io.github.wooenrico.handler.MyReactorHandler;
 import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.annotation.AutoKafka;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
-import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @AutoKafka
 @TestConfiguration
@@ -38,4 +40,13 @@ public class TestConfig {
         return new DefaultKafkaProducer(kafkaProperties.getSenderProperties("test").getProperties());
     }
 
+    @Bean
+    public Function<List<String>, List<String>> myTopicFunction() {
+        return list -> list.stream().filter(s -> s.equals("test1")).collect(Collectors.toList());
+    }
+
+    @Bean
+    public Function<List<String>, List<String>> myTopicFunction2() {
+        return list -> list.stream().filter(s -> s.equals("test2")).collect(Collectors.toList());
+    }
 } 

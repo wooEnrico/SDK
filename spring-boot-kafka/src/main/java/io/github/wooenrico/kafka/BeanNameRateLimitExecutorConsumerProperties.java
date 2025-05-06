@@ -12,11 +12,37 @@ public class BeanNameRateLimitExecutorConsumerProperties extends RateLimitExecut
      */
     private String handlerBeanName;
 
+    /**
+     * 自定义topic function
+     */
+    private String topicFunctionName;
+
+    /**
+     * 自定义并发度 function
+     */
+    private String concurrencyFunctionName;
+
     public String getHandlerBeanName() {
         return handlerBeanName;
     }
 
     public void setHandlerBeanName(String handlerBeanName) {
         this.handlerBeanName = handlerBeanName;
+    }
+
+    public String getTopicFunctionName() {
+        return topicFunctionName;
+    }
+
+    public void setTopicFunctionName(String topicFunctionName) {
+        this.topicFunctionName = topicFunctionName;
+    }
+
+    public String getConcurrencyFunctionName() {
+        return concurrencyFunctionName;
+    }
+
+    public void setConcurrencyFunctionName(String concurrencyFunctionName) {
+        this.concurrencyFunctionName = concurrencyFunctionName;
     }
 }

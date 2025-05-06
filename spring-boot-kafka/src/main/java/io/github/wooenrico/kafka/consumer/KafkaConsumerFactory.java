@@ -6,25 +6,16 @@ import io.github.wooenrico.kafka.handler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import java.io.Closeable;
-import java.util.HashSet;
-import java.util.Set;
-
-public class KafkaConsumerFactory implements InitializingBean, DisposableBean, ApplicationContextAware, SmartInitializingSingleton {
+public class KafkaConsumerFactory extends AbstractKafkaConsumerFactory implements ApplicationContextAware, SmartInitializingSingleton {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerFactory.class);
-
-    private final Set<Closeable> closeableObjects = new HashSet<>();
-    private final KafkaProperties kafkaProperties;
     private ApplicationContext applicationContext;
 
     public KafkaConsumerFactory(KafkaProperties kafkaProperties) {
-        this.kafkaProperties = kafkaProperties;
+        super(kafkaProperties);
     }
 
     @Override
@@ -45,44 +36,22 @@ public class KafkaConsumerFactory implements InitializingBean, DisposableBean, A
         log.info("kafka consumer factory initialized");
     }
 
-    private void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception {
+    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception {
 
         if (key == null || key.isEmpty() || properties == null) {
             return;
         }
 
-        String handlerBeanName = properties.getHandlerBeanName();
+        String handlerBeanName = properties.getHandlerBeanName() != null && !properties.getHandlerBeanName().isEmpty() ? properties.getHandlerBeanName() : key;
 
-        IKafkaHandler handler = handlerBeanName != null ?
-                this.applicationContext.getBean(handlerBeanName, IKafkaHandler.class)
-                :
-                this.applicationContext.getBean(key, IKafkaHandler.class);
+        IKafkaHandler handler = this.applicationContext.getBean(handlerBeanName, IKafkaHandler.class);
 
         if (handler instanceof KafkaHandler) {
-            DefaultKafkaHandler kafkaHandler = (DefaultKafkaHandler) handler;
-            log.info("create kafka consumer {}, {}", properties, kafkaHandler);
-            for (int i = 0; i < properties.getConcurrency(); i++) {
-                DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, kafkaHandler);
-                this.closeableObjects.add(kafkaConsumer);
-            }
-
+            this.createConsumer(key, properties, (DefaultKafkaHandler) handler);
         } else if (handler instanceof ReactorKafkaHandler) {
-            DefaultReactorKafkaHandler reactorKafkaHandler = (DefaultReactorKafkaHandler) handler;
-            log.info("create reactor kafka consumer {}, {}", properties, reactorKafkaHandler);
-            for (int i = 0; i < properties.getConcurrency(); i++) {
-                DefaultKafkaReceiver reactorKafkaReceiver = new DefaultKafkaReceiver(key + i, properties, reactorKafkaHandler);
-                this.closeableObjects.add(reactorKafkaReceiver);
-            }
+            this.createConsumer(key, properties, (DefaultReactorKafkaHandler) handler);
         } else {
             log.error("no kafka handler for {}", properties);
-        }
-    }
-
-
-    @Override
-    public void destroy() throws Exception {
-        for (Closeable closeable : this.closeableObjects) {
-            closeable.close();
         }
     }
 }

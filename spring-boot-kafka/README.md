@@ -36,6 +36,41 @@ if dependency omitted for duplicate, you can use below dependency instead.
 </dependencies>
 ```
 
+## consumer function implements
+
+```properties
+kafka.function.enabled=true
+```
+
+```java
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Mono;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+@Configuration
+public class TestConfiguration {
+
+    @Bean("myHandler")
+    public Consumer<ConsumerRecord<String, String>> myConsumer() {
+        return record -> {
+            //TODO
+        };
+    }
+
+    @Bean("myReactorHandler")
+    public Function<ConsumerRecord<String, String>, Mono<Void>> myReactorConsumer() {
+        return record -> {
+            //TODO
+            return Mono.empty();
+        };
+    }
+}
+```
+
 ## consumer handler implements
 
 ### example1
@@ -84,7 +119,7 @@ import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 @Configuration
 @AutoKafka
 public class MyConfiguration {
-    
+
     @Bean("testReactorKafkaSender")
     @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
     public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
