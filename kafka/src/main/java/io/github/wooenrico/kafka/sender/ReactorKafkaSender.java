@@ -140,7 +140,13 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
     }
 
 
-    private Sinks.EmitResult emitToSinks(SenderRecord<K, V, T> senderRecord) {
+    /**
+     * 提交到 sinks
+     *
+     * @param senderRecord 发送记录
+     * @return 提交结果
+     */
+    public Sinks.EmitResult emitToSinks(SenderRecord<K, V, T> senderRecord) {
         SinksSendToKafkaSubscriber<K, V, T> subscriber = this.cache.get(Thread.currentThread());
         if (subscriber == null) {
             return Sinks.EmitResult.FAIL_TERMINATED;
