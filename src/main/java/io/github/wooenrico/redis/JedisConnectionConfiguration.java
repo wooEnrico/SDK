@@ -29,7 +29,7 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
     }
 
     public JedisConnectionFactory createJedisConnectionFactory() {
-        JedisClientConfiguration clientConfiguration = this.getJedisClientConfiguration();
+        JedisClientConfiguration clientConfiguration = this.getJedisClientConfiguration().build();
         // sentinel
         RedisSentinelConfiguration sentinelConfig = this.getSentinelConfig();
         if (sentinelConfig != null) {
@@ -44,7 +44,7 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
         return new JedisConnectionFactory(this.getStandaloneConfig(), clientConfiguration);
     }
 
-    private JedisClientConfiguration getJedisClientConfiguration() {
+    public JedisClientConfiguration.JedisClientConfigurationBuilder getJedisClientConfiguration() {
         JedisClientConfiguration.JedisClientConfigurationBuilder builder = JedisClientConfiguration.builder();
         if (this.properties.getTimeout() != null) {
             builder.readTimeout(this.properties.getTimeout());
@@ -83,10 +83,10 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
         if (StringUtils.hasText(this.properties.getUrl()) && this.urlUsesSsl()) {
             builder.useSsl();
         }
-        return builder.build();
+        return builder;
     }
 
-    private JedisPoolConfig jedisPoolConfig(RedisProperties.Pool pool) {
+    public JedisPoolConfig jedisPoolConfig(RedisProperties.Pool pool) {
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMaxTotal(pool.getMaxActive());
         config.setMaxIdle(pool.getMaxIdle());
