@@ -10,7 +10,7 @@ spring boot version = 3.1.2
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-data-redis</artifactId>
-        <version>3.1.2</version>
+        <version>3.1.2.1</version>
     </dependency>
 </dependencies>
 ```
