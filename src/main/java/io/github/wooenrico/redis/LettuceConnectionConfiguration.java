@@ -31,7 +31,7 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         if (clientResources == null) {
             clientResources = ClientResources.create();
         }
-        LettuceClientConfiguration clientConfiguration = getLettuceClientConfiguration(clientResources, this.properties.getLettuce().getPool());
+        LettuceClientConfiguration clientConfiguration = getLettuceClientConfiguration(clientResources, this.properties.getLettuce().getPool()).build();
         // sentinel
         RedisSentinelConfiguration sentinelConfig = this.getSentinelConfig();
         if (sentinelConfig != null) {
@@ -46,7 +46,7 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         return new LettuceConnectionFactory(this.getStandaloneConfig(), clientConfiguration);
     }
 
-    private LettuceClientConfiguration getLettuceClientConfiguration(ClientResources clientResources, RedisProperties.Pool pool) {
+    public LettuceClientConfiguration.LettuceClientConfigurationBuilder getLettuceClientConfiguration(ClientResources clientResources, RedisProperties.Pool pool) {
         LettuceClientConfiguration.LettuceClientConfigurationBuilder builder;
         // pool or not
         if (pool != null && pool.getEnabled() != null && pool.getEnabled()) {
@@ -75,14 +75,14 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
             builder.useSsl();
         }
         // client options (timeout、connectTimeout、refresh)
-        ClientOptions clientOptions = this.createClientOptions();
+        ClientOptions clientOptions = this.createClientOptions().build();
         if (clientOptions != null) {
             builder.clientOptions(clientOptions);
         }
-        return builder.build();
+        return builder;
     }
 
-    private ClientOptions createClientOptions() {
+    public ClientOptions.Builder createClientOptions() {
         ClientOptions.Builder builder = ClientOptions.builder();
         if (this.properties.getCluster() != null) {
             ClusterClientOptions.Builder cluster = ClusterClientOptions.builder();
@@ -100,10 +100,10 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         if (this.properties.getConnectTimeout() != null) {
             builder.socketOptions(SocketOptions.builder().connectTimeout(this.properties.getConnectTimeout()).build());
         }
-        return builder.timeoutOptions(TimeoutOptions.enabled()).build();
+        return builder.timeoutOptions(TimeoutOptions.enabled());
     }
 
-    private GenericObjectPoolConfig<?> getPoolConfig(RedisProperties.Pool properties) {
+    public GenericObjectPoolConfig<?> getPoolConfig(RedisProperties.Pool properties) {
         GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();
         config.setMaxTotal(properties.getMaxActive());
         config.setMaxIdle(properties.getMaxIdle());
