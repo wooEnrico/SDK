@@ -3,6 +3,7 @@ import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
 import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +38,11 @@ public class TestConsumer {
         consumerProperties.setTopic(Collections.singletonList("test"));
 
         // record handler
-        Consumer<ConsumerRecord<String, String>> handler = stringStringConsumerRecord -> {
-            countDownLatch.countDown();
-            log.info("{}", stringStringConsumerRecord.value());
+        Consumer<ConsumerRecords<String, String>> handler = records -> {
+            for (ConsumerRecord<String, String> record : records) {
+                countDownLatch.countDown();
+                log.info("{}", record.value());
+            }
         };
 
         // consumer

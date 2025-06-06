@@ -2,6 +2,7 @@ import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +71,11 @@ public class SenderConsumerIT extends AbstractKafkaContainerTest {
         // Set up consumer
         try (DefaultKafkaConsumer consumer = new DefaultKafkaConsumer("test-consumer",
                 consumerProperties,
-                record -> {
-                    log.info("Received: {}", record.value());
-                    receiveLatch.countDown();
+                records -> {
+                    for (ConsumerRecord<String, String> record : records) {
+                        log.info("Received: {}", record.value());
+                        receiveLatch.countDown();
+                    }
                 })) {
 
             // Set up producer

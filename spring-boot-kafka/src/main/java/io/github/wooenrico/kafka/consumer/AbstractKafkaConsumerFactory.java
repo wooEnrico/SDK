@@ -3,6 +3,7 @@ package io.github.wooenrico.kafka.consumer;
 import io.github.wooenrico.kafka.BeanNameRateLimitExecutorConsumerProperties;
 import io.github.wooenrico.kafka.KafkaProperties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -35,7 +36,7 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
 
     protected abstract void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception;
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Consumer<ConsumerRecord<String, String>> consumer) throws Exception {
+    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Consumer<ConsumerRecords<String, String>> consumer) throws Exception {
         log.info("create kafka consumer {}, {}", properties, consumer);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, consumer);

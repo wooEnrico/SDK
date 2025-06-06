@@ -2,7 +2,6 @@ package io.github.wooenrico.kafka.consumer;
 
 import io.github.wooenrico.kafka.KafkaUtil;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
@@ -28,16 +27,14 @@ public abstract class AbstractExecutorKafkaConsumer<K, V> extends AbstractKafkaC
 
     @Override
     protected void handle(ConsumerRecords<K, V> records) {
-        for (ConsumerRecord<K, V> record : records) {
-            this.threadPoolExecutor.execute(() -> {
-                try {
-                    this.executorHandle(record);
-                } catch (Exception e) {
-                    log.error("executorHandle error", e);
-                }
-            });
-        }
+        this.threadPoolExecutor.execute(() -> {
+            try {
+                this.executorHandle(records);
+            } catch (Exception e) {
+                log.error("executorHandle error", e);
+            }
+        });
     }
 
-    protected abstract void executorHandle(ConsumerRecord<K, V> record);
+    protected abstract void executorHandle(ConsumerRecords<K, V> records);
 }

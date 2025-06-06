@@ -2,7 +2,7 @@ package io.github.wooenrico.kafka.consumer;
 
 import com.google.common.util.concurrent.RateLimiter;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.Deserializer;
 
 public abstract class AbstractRateLimitExecutorKafkaConsumer<K, V> extends AbstractExecutorKafkaConsumer<K, V> {
@@ -15,12 +15,15 @@ public abstract class AbstractRateLimitExecutorKafkaConsumer<K, V> extends Abstr
     }
 
     @Override
-    protected void executorHandle(ConsumerRecord<K, V> record) {
+    protected void executorHandle(ConsumerRecords<K, V> records) {
         if (this.rateLimiter != null) {
-            this.rateLimiter.acquire();
+            int count = records == null || records.isEmpty() ? 0 : records.count();
+            if (count > 0) {
+                this.rateLimiter.acquire(count);
+            }
         }
-        this.rateLimitHandle(record);
+        this.rateLimitHandle(records);
     }
 
-    protected abstract void rateLimitHandle(ConsumerRecord<K, V> record);
+    protected abstract void rateLimitHandle(ConsumerRecords<K, V> records);
 }

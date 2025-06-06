@@ -1,5 +1,9 @@
 # USEAGE
 
+## version
+
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/wooEnrico/SDK)
+
 ## dependency
 
 ```xml
@@ -8,7 +12,7 @@
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-kafka</artifactId>
-        <version>1.0.9</version>
+        <version>${tag#v}</version>
     </dependency>
 </dependencies>
 ```
@@ -55,8 +59,8 @@ import java.util.function.Function;
 public class TestConfiguration {
 
     @Bean("myHandler")
-    public Consumer<ConsumerRecord<String, String>> myConsumer() {
-        return record -> {
+    public Consumer<ConsumerRecords<String, String>> myConsumer() {
+        return records -> {
             //TODO
         };
     }
@@ -75,84 +79,15 @@ public class TestConfiguration {
 
 ### example1
 
-```java
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooenrico.kafka.handler.DefaultKafkaHandler;
-
-@Service("myHandler")
-public class MyHandler implements DefaultKafkaHandler {
-    @Override
-    public void accept(ConsumerRecord<String, String> record) {
-        //TODO
-    }
-}
-```
+[MyHandler.java](https://github.com/wooEnrico/SDK/blob/master/spring-boot-kafka/src/test/java/io/github/wooenrico/handler/MyHandler.java)
 
 ### example2
 
-```java
-import reactor.core.publisher.Mono;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import io.github.wooenrico.kafka.handler.DefaultReactorKafkaHandler;
+[MyReactorHandler.java](https://github.com/wooEnrico/SDK/blob/master/spring-boot-kafka/src/test/java/io/github/wooenrico/handler/MyReactorHandler.java)
 
-@Service("myReactorHandler")
-public class MyReactorHandler implements DefaultReactorKafkaHandler {
-    @Override
-    public Mono<Void> apply(ConsumerRecord<String, String> record) {
-        //TODO
-        return Mono.empty();
-    }
-}
-```
+## sender bean define
 
-## sender bean define & autowired
-
-### define
-
-```java
-import io.github.wooenrico.kafka.KafkaProperties;
-import io.github.wooenrico.kafka.annotation.AutoKafka;
-import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
-
-@Configuration
-@AutoKafka
-public class MyConfiguration {
-
-    @Bean("testReactorKafkaSender")
-    @ConditionalOnProperty(name = "kafka.sender.test.enabled", matchIfMissing = false, havingValue = "true")
-    public DefaultReactorKafkaSender reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultReactorKafkaSender(kafkaProperties.getSenderProperties("test"));
-    }
-
-    @Bean("test2KafkaProducer")
-    @ConditionalOnProperty(name = "kafka.sender.test2.enabled", matchIfMissing = false, havingValue = "true")
-    public DefaultKafkaProducer reactorKafkaSender(KafkaProperties kafkaProperties) {
-        return new DefaultKafkaProducer(kafkaProperties.getSenderProperties("test2").getProperties());
-    }
-}
-```
-
-### autowired
-
-```java
-
-import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
-import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
-
-@Service
-public class SenderTest {
-    @Autowired
-    private DefaultReactorKafkaSender reactorKafkaSender;
-    @Autowired
-    @Qualifier("testReactorKafkaSender")
-    private DefaultReactorKafkaSender testReactorKafkaSender;
-    @Autowired
-    @Qualifier("test2KafkaProducer")
-    private DefaultKafkaProducer kafkaProducer;
-}
-```
+[TestConfig.java](https://github.com/wooEnrico/SDK/blob/master/spring-boot-kafka/src/test/java/io/github/wooenrico/config/TestConfig.java)
 
 ## properties
 
