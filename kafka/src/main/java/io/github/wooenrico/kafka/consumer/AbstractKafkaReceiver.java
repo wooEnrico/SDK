@@ -82,7 +82,7 @@ public abstract class AbstractKafkaReceiver<K, V> implements Closeable {
                 .concatMap(consumerRecordFlux -> {
                     return this.handle(consumerRecordFlux).onErrorResume(throwable -> {
                         log.error("kafka receiver handle error", throwable);
-                        return Flux.empty();
+                        return consumerRecordFlux;
                     });
                 })
                 .subscribe();
