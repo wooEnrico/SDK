@@ -8,6 +8,7 @@
         <version>1.0.13-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <name>${project.groupId}:${project.artifactId}</name>
     <artifactId>version</artifactId>
 
     <build>
