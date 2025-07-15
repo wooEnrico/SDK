@@ -23,7 +23,7 @@ public class SenderProperties {
     /**
      * sinks cache size
      */
-    private long sinksCacheSize = 100L;
+    private int sinksCacheSize = 100;
 
     /**
      * sinks cache clear up
@@ -70,11 +70,11 @@ public class SenderProperties {
         this.sinksEmitTimeout = sinksEmitTimeout;
     }
 
-    public long getSinksCacheSize() {
+    public int getSinksCacheSize() {
         return sinksCacheSize;
     }
 
-    public void setSinksCacheSize(long sinksCacheSize) {
+    public void setSinksCacheSize(int sinksCacheSize) {
         this.sinksCacheSize = sinksCacheSize;
     }
 

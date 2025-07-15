@@ -1,12 +1,10 @@
 package io.github.wooenrico.kafka.sender;
 
-import com.github.benmanes.caffeine.cache.*;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serializer;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.Disposable;
 import reactor.core.publisher.*;
 import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
@@ -14,9 +12,6 @@ import reactor.kafka.sender.SenderRecord;
 import reactor.kafka.sender.SenderResult;
 
 import java.io.Closeable;
-import java.time.Duration;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
@@ -27,7 +22,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
     protected final Serializer<K> keySerializer;
     protected final Serializer<V> valueSerializer;
 
-    private final LoadingCache<Thread, SinksSendToKafkaSubscriber<K, V, T>> cache;
+    private final ReactorKafkaSenderSinksManyCache<K, V, T> cache;
     private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
     private final Consumer<SenderResult<T>> senderResultConsumer;
 
@@ -43,7 +38,13 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
         this.senderResultConsumer = overrideSenderResultConsumer(senderResultConsumer);
         this.kafkaSender = this.createKafkaSender(this.properties, this.keySerializer, this.valueSerializer);
 
-        this.cache = this.getLoadingCache();
+        this.cache = new ReactorKafkaSenderSinksManyCache<>(this.kafkaSender, this.senderResultConsumer,
+                this.properties.getSinksSubscribeAwait(),
+                this.properties.getSinksEmitTimeout(),
+                this.properties.getSinksCacheSize(),
+                this.properties.getQueueSize()
+        );
+        this.cache.build();
     }
 
     private static <T> Consumer<SenderResult<T>> overrideSenderResultConsumer(Consumer<SenderResult<T>> senderResultConsumer) {
@@ -61,36 +62,9 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
         };
     }
 
-    private LoadingCache<Thread, SinksSendToKafkaSubscriber<K, V, T>> getLoadingCache() {
-        RemovalListener<Thread, SinksSendToKafkaSubscriber<K, V, T>> removalListener = new RemovalListener<Thread, SinksSendToKafkaSubscriber<K, V, T>>() {
-            @Override
-            public void onRemoval(Thread thread, SinksSendToKafkaSubscriber<K, V, T> kvtSinksSendToKafkaSubscriber, RemovalCause removalCause) {
-                log.debug("reactor kafka sinks remove for {}, {}, {}", thread, kvtSinksSendToKafkaSubscriber, removalCause);
-                if (kvtSinksSendToKafkaSubscriber != null) {
-                    kvtSinksSendToKafkaSubscriber.dispose();
-                }
-            }
-        };
-
-        Caffeine<Thread, SinksSendToKafkaSubscriber<K, V, T>> caffeine = Caffeine.newBuilder()
-                .expireAfterAccess(this.properties.getSinksEmitTimeout().toNanos(), TimeUnit.NANOSECONDS)
-                .maximumSize(this.properties.getSinksCacheSize())
-                .removalListener(removalListener);
-
-        CacheLoader<Thread, SinksSendToKafkaSubscriber<K, V, T>> cacheLoader = new CacheLoader<Thread, SinksSendToKafkaSubscriber<K, V, T>>() {
-            @Override
-            public SinksSendToKafkaSubscriber<K, V, T> load(Thread thread) {
-                return newSinksSendToKafkaSubscriber(thread);
-            }
-        };
-
-        return caffeine.build(cacheLoader);
-    }
-
     @Override
     public void close() {
-        this.cache.asMap().forEach((key, value) -> value.dispose());
-        this.cache.invalidateAll();
+        this.cache.dispose();
         this.kafkaSender.close();
     }
 
@@ -147,36 +121,19 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
      * @return 提交结果
      */
     public Sinks.EmitResult emitToSinks(SenderRecord<K, V, T> senderRecord) {
-        SinksSendToKafkaSubscriber<K, V, T> subscriber = this.cache.get(Thread.currentThread());
-        if (subscriber == null) {
+        Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = this.cache.get(Thread.currentThread());
+        if (senderRecordMany == null) {
             return Sinks.EmitResult.FAIL_TERMINATED;
         }
 
-        Sinks.EmitResult emitResult = subscriber.tryEmitNext(senderRecord);
-
+        Sinks.EmitResult emitResult = senderRecordMany.tryEmitNext(senderRecord);
         if (emitResult.isSuccess()) {
             return emitResult;
         }
 
-        if (Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER.equals(emitResult)
-                || Sinks.EmitResult.FAIL_TERMINATED.equals(emitResult)
-                || Sinks.EmitResult.FAIL_CANCELLED.equals(emitResult)) {
-            this.cache.invalidate(Thread.currentThread());
-            subscriber.dispose();
-        }
-
+        // 销毁
+        this.cache.invalidate(Thread.currentThread());
         return emitResult;
-    }
-
-    private SinksSendToKafkaSubscriber<K, V, T> newSinksSendToKafkaSubscriber(Thread thread) {
-        if (thread == null) {
-            return null;
-        }
-        LinkedBlockingQueue<SenderRecord<K, V, T>> queue = new LinkedBlockingQueue<>(this.properties.getQueueSize());
-        Sinks.Many<SenderRecord<K, V, T>> senderRecordMany = Sinks.many().unicast().onBackpressureBuffer(queue);
-        SinksSendToKafkaSubscriber<K, V, T> kvtSinksSendToKafkaSubscriber = new SinksSendToKafkaSubscriber<>(this.kafkaSender, senderRecordMany, this.senderResultConsumer, this.properties.getSinksSubscribeAwait());
-        log.debug("reactor kafka new sinks for {}, {}", thread, kvtSinksSendToKafkaSubscriber);
-        return kvtSinksSendToKafkaSubscriber;
     }
 
     private reactor.kafka.sender.KafkaSender<K, V> createKafkaSender(SenderProperties properties, Serializer<K> keySerializer, Serializer<V> valueSerializer) {
@@ -187,45 +144,5 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
                 .closeTimeout(properties.getCloseTimeout());
 
         return KafkaSender.create(senderOptions);
-    }
-
-    static class SinksSendToKafkaSubscriber<K, V, T> implements Disposable {
-        private final AtomicBoolean closed = new AtomicBoolean(false);
-        private final Sinks.Many<SenderRecord<K, V, T>> sinks;
-        private final Disposable subscriber;
-
-        public SinksSendToKafkaSubscriber(KafkaSender<K, V> kafkaSender, Sinks.Many<SenderRecord<K, V, T>> sinks, Consumer<SenderResult<T>> senderResultConsumer, Duration sinksSubscribeAwait) {
-            this.sinks = sinks;
-
-            // CountDownLatch is used to ensure that the subscriber is subscribed before the method returns.
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            this.subscriber = kafkaSender.send(this.sinks.asFlux().doOnSubscribe(s -> {
-                countDownLatch.countDown();
-            })).subscribe(senderResultConsumer);
-
-            try {
-                countDownLatch.await(sinksSubscribeAwait.toNanos(), TimeUnit.NANOSECONDS);
-            } catch (InterruptedException ignored) {
-            }
-        }
-
-        public Sinks.EmitResult tryEmitNext(SenderRecord<K, V, T> senderRecord) {
-            if (this.closed.get()) {
-                return Sinks.EmitResult.FAIL_TERMINATED;
-            }
-            return this.sinks.tryEmitNext(senderRecord);
-        }
-
-        @Override
-        public void dispose() {
-            if (!this.closed.compareAndSet(false, true)) {
-                return;
-            }
-
-            Sinks.EmitResult emitResult = this.sinks.tryEmitComplete();
-            if (emitResult.isFailure() && this.subscriber != null && !this.subscriber.isDisposed()) {
-                this.subscriber.dispose();
-            }
-        }
     }
 }
