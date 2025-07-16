@@ -11,8 +11,6 @@ import reactor.core.publisher.Sinks;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> implements Disposable {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SinksManyCache.class);
@@ -23,9 +21,9 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
         return k -> {
             LinkedBlockingQueue<V> queue = Queues.newLinkedBlockingQueue(this.getBackpressureBuffer());
             Sinks.Many<V> sinks = Sinks.many().unicast().onBackpressureBuffer(queue);
-            Disposable subscribe = this.getPublisherFunction().apply(sinks.asFlux())
-                    .doOnSubscribe(this.onSubscribe())
-                    .subscribe(this.subscribe());
+            Disposable subscribe = this.flatMap(sinks.asFlux())
+                    .doOnSubscribe(this::onSubscribe)
+                    .subscribe(this::subscribe);
             try {
                 this.doOnSubscriberCreated(subscribe);
             } catch (Exception e) {
@@ -65,21 +63,17 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
      *
      * @return 发布者函数
      */
-    protected abstract Function<Flux<V>, Flux<R>> getPublisherFunction();
+    protected abstract Flux<R> flatMap(Flux<V> flux);
 
     /**
      * 获取订阅函数
-     *
-     * @return 订阅函数
      */
-    protected abstract Consumer<? super Subscription> onSubscribe();
+    protected abstract void onSubscribe(Subscription subscription);
 
     /**
      * 获取订阅者函数
-     *
-     * @return 订阅者函数
      */
-    protected abstract Consumer<R> subscribe();
+    protected abstract void subscribe(R result);
 
 
     /**

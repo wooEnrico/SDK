@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ReactorKafkaSenderSinksManyCache<K, V, T> extends SinksManyCache<Thread, SenderRecord<K, V, T>, SenderResult<T>> {
     private static final Logger log = LoggerFactory.getLogger(ReactorKafkaSenderSinksManyCache.class);
@@ -37,20 +36,18 @@ public class ReactorKafkaSenderSinksManyCache<K, V, T> extends SinksManyCache<Th
     }
 
     @Override
-    protected Function<Flux<SenderRecord<K, V, T>>, Flux<SenderResult<T>>> getPublisherFunction() {
-        return kafkaSender::send;
+    protected Flux<SenderResult<T>> flatMap(Flux<SenderRecord<K, V, T>> flux) {
+        return this.kafkaSender.send(flux);
     }
 
     @Override
-    protected Consumer<? super Subscription> onSubscribe() {
-        return subscription -> {
-            this.countDownLatch.countDown();
-        };
+    protected void onSubscribe(Subscription subscription) {
+        this.countDownLatch.countDown();
     }
 
     @Override
-    protected Consumer<SenderResult<T>> subscribe() {
-        return senderResultConsumer;
+    protected void subscribe(SenderResult<T> result) {
+        senderResultConsumer.accept(result);
     }
 
     @Override
