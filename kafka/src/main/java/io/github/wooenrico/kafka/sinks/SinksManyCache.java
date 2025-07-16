@@ -8,29 +8,34 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> implements Disposable {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SinksManyCache.class);
     protected final Map<K, Disposable> disposables = new ConcurrentHashMap<>(this.getCacheMaximumSize());
+    private final Map<K, CountDownLatch> latchMap = new ConcurrentHashMap<>(this.getCacheMaximumSize());
 
     @Override
     protected CacheLoader<K, Sinks.Many<V>> getCacheLoader() {
         return k -> {
             LinkedBlockingQueue<V> queue = Queues.newLinkedBlockingQueue(this.getBackpressureBuffer());
             Sinks.Many<V> sinks = Sinks.many().unicast().onBackpressureBuffer(queue);
-            Disposable subscribe = this.flatMap(sinks.asFlux())
-                    .doOnSubscribe(this::onSubscribe)
-                    .subscribe(this::subscribe);
+            this.preSubscriberCreated(k);
+            Disposable subscribe = this.flatMap(k, sinks.asFlux())
+                    .doOnSubscribe(subscription -> this.realSubscribe(k, subscription))
+                    .subscribe(r -> this.result(k, r));
             try {
-                this.doOnSubscriberCreated(subscribe);
+                this.onSubscriberCreated(k, subscribe);
             } catch (Exception e) {
-                log.error("Error during onCreateSubscriber for key: {}", k, e);
+                log.error("Error during onSubscriberCreated for key: {}", k, e);
             }
             this.disposables.put(k, subscribe);
-            log.info("Created sinks for {}, {}", k, sinks.hashCode());
+            log.info("SinksManyCache created for key : {}, sinks : {}", k, sinks.hashCode());
             return sinks;
         };
     }
@@ -45,7 +50,7 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
             if (remove != null && !remove.isDisposed()) {
                 remove.dispose();
             }
-            log.info("Removed sinks cache for : {}, value : {}, cause: {}", key, value != null ? value.hashCode() : null, cause);
+            log.info("SinksManyCache removalListener called for key : {}, value : {}, cause: {}", key, value != null ? value.hashCode() : null, cause);
         };
     }
 
@@ -59,30 +64,76 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
     }
 
     /**
-     * 获取发布者函数
+     * 将订阅者的键和Flux进行映射
      *
-     * @return 发布者函数
+     * @param k    订阅者的键
+     * @param flux 订阅者的Flux
+     * @return 映射后的Flux
      */
-    protected abstract Flux<R> flatMap(Flux<V> flux);
+    protected abstract Flux<R> flatMap(K k, Flux<V> flux);
 
     /**
-     * 获取订阅函数
-     */
-    protected abstract void onSubscribe(Subscription subscription);
-
-    /**
-     * 获取订阅者函数
-     */
-    protected abstract void subscribe(R result);
-
-
-    /**
-     * 处理创建时的操作
+     * 订阅者创建前的操作
      *
-     * @param disposable 订阅者
-     * @throws Exception 如果处理过程中发生异常
+     * @param k 订阅者的键
      */
-    protected abstract void doOnSubscriberCreated(Disposable disposable) throws Exception;
+    protected void preSubscriberCreated(K k) {
+        CountDownLatch countDownLatch = this.latchMap.computeIfAbsent(k, key -> new CountDownLatch(1));
+        log.info("SinksManyCache preSubscriberCreated called for key: {}, latch : {}", k, countDownLatch);
+    }
+
+    /**
+     * 真实订阅操作
+     *
+     * @param k            订阅者的键
+     * @param subscription 订阅
+     */
+    protected void realSubscribe(K k, Subscription subscription) {
+        CountDownLatch countDownLatch = this.latchMap.get(k);
+        if (countDownLatch != null) {
+            countDownLatch.countDown();
+            log.info("SinksManyCache realSubscribe called for key: {}, subscription: {}, latch : {}", k, subscription, countDownLatch);
+        }
+
+    }
+
+    /**
+     * 订阅者创建后的操作
+     *
+     * @param k          订阅者的键
+     * @param disposable 订阅者的可丢弃对象
+     * @throws Exception 可能抛出的异常
+     */
+    protected void onSubscriberCreated(K k, Disposable disposable) throws Exception {
+        CountDownLatch countDownLatch = this.latchMap.get(k);
+        if (countDownLatch != null) {
+            try {
+                countDownLatch.await(this.getSinksSubscribeAwait().toNanos(), TimeUnit.NANOSECONDS);
+                log.info("SinksManyCache onSubscriberCreated called for key: {}, disposable: {}, latch : {}", k, disposable, countDownLatch);
+            } catch (Exception e) {
+                log.error("Error during onSubscriberCreated for key: {}", k, e);
+            } finally {
+                this.latchMap.remove(k);
+            }
+        }
+    }
+
+    /**
+     * 获取订阅等待时间
+     *
+     * @return 订阅等待时间
+     */
+    protected Duration getSinksSubscribeAwait() {
+        return Duration.ofSeconds(5);
+    }
+
+    /**
+     * 结果处理
+     *
+     * @param k      订阅者的键
+     * @param result 处理结果
+     */
+    protected abstract void result(K k, R result);
 
     /**
      * 释放资源
