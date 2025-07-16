@@ -7,6 +7,9 @@ import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.kafka.sender.SenderResult;
 
 import java.util.concurrent.CountDownLatch;
@@ -47,8 +50,13 @@ public class TestSender {
         // reactor sender
         DefaultReactorKafkaSender reactorKafkaSender = new DefaultReactorKafkaSender(senderProperties, senderResultConsumer);
 
+        Scheduler senderScheduler = Schedulers.newParallel("sender", Runtime.getRuntime().availableProcessors());
         Flux.range(0, count)
-                .flatMap(integer -> reactorKafkaSender.send("test", integer.toString()))
+                .flatMap(integer -> {
+                    return Mono.defer(() -> {
+                        return reactorKafkaSender.send("test", integer.toString());
+                    }).subscribeOn(senderScheduler);
+                })
                 .doOnError(throwable -> {
                     log.error("send error", throwable);
                 })

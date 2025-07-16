@@ -69,7 +69,6 @@
         <appender-ref ref="fileErrorLog"/>
     </root>
 
-    <logger name="com.springboot.thread.AutoRunTemplate" level="ERROR"/>
-    <logger name="io.github.wooenrico.kafka.sender.ReactorKafkaSender" level="DEBUG"/>
+    <logger name="io.github.wooenrico" level="DEBUG"/>
 </configuration>
 

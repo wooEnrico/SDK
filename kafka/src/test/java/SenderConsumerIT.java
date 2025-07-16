@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -48,9 +50,14 @@ public class SenderConsumerIT extends AbstractKafkaContainerTest {
                         }
                     })) {
 
+                Scheduler senderScheduler = Schedulers.newParallel("sender", Runtime.getRuntime().availableProcessors());
                 // Send messages
                 Flux.range(0, MESSAGE_COUNT)
-                        .flatMap(i -> sender.send(TOPIC, String.valueOf(i)))
+                        .flatMap(i -> {
+                            return Mono.defer(() -> {
+                                return sender.send(TOPIC, String.valueOf(i));
+                            }).subscribeOn(senderScheduler);
+                        })
                         .subscribe();
 
                 // Wait for all operations to complete
