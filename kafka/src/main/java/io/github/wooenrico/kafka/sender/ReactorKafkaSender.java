@@ -40,6 +40,7 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
 
         this.cache = new ReactorKafkaSenderSinksManyCache<>(this.kafkaSender, this.senderResultConsumer,
                 this.properties.getSinksSubscribeAwait(),
+                this.properties.getSinksSubscribeExtraAwait(),
                 this.properties.getSinksEmitTimeout(),
                 this.properties.getSinksCacheSize(),
                 this.properties.getQueueSize()
@@ -87,10 +88,9 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
 
         log.debug("reactor kafka sinks emit fail for {}", emitResult);
 
-        return Mono.defer(() -> {
-            this.send(senderRecord).subscribe(this.senderResultConsumer);
-            return Mono.empty();
-        });
+        return this.send(senderRecord)
+                .doOnNext(this.senderResultConsumer)
+                .then();
     }
 
     /**
@@ -127,7 +127,12 @@ public abstract class ReactorKafkaSender<K, V, T> implements Closeable {
         }
 
         Sinks.EmitResult emitResult = senderRecordMany.tryEmitNext(senderRecord);
+
         if (emitResult.isSuccess()) {
+            return emitResult;
+        }
+
+        if (Sinks.EmitResult.FAIL_OVERFLOW.equals(emitResult) || Sinks.EmitResult.FAIL_NON_SERIALIZED.equals(emitResult)) {
             return emitResult;
         }
 

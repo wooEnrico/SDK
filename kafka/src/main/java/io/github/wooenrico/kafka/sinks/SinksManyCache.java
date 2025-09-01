@@ -2,11 +2,13 @@ package io.github.wooenrico.kafka.sinks;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.RemovalListener;
+import com.github.benmanes.caffeine.cache.Scheduler;
 import com.google.common.collect.Queues;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> implements Disposable {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SinksManyCache.class);
@@ -109,6 +112,7 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
         if (countDownLatch != null) {
             try {
                 countDownLatch.await(this.getSinksSubscribeAwait().toNanos(), TimeUnit.NANOSECONDS);
+                LockSupport.parkNanos(this.getSinksSubscribeExtraAwait().toNanos()); // 额外等待时间，确保订阅稳定
                 log.debug("SinksManyCache onSubscriberCreated called for key: {}, disposable: {}, latch : {}", k, disposable, countDownLatch);
             } catch (Exception e) {
                 log.error("Error during onSubscriberCreated for key: {}", k, e);
@@ -125,6 +129,13 @@ public abstract class SinksManyCache<K, V, R> extends Cache<K, Sinks.Many<V>> im
      */
     protected Duration getSinksSubscribeAwait() {
         return Duration.ofSeconds(5);
+    }
+
+    /**
+     * 获取订阅额外等待时间
+     */
+    public Duration getSinksSubscribeExtraAwait() {
+        return Duration.ofSeconds(1);
     }
 
     /**

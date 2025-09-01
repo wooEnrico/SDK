@@ -1,5 +1,6 @@
 import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
+import io.github.wooenrico.kafka.consumer.DefaultReactorKafkaConsumer;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SenderConsumerIT extends AbstractKafkaContainerTest {
     private static final Logger log = LoggerFactory.getLogger(SenderConsumerIT.class);
     private static final String TOPIC = "test-topic";
-    private static final int MESSAGE_COUNT = 100;
+    private static final int MESSAGE_COUNT = 10000;
 
     @Test
     void testReactorSenderAndConsumer() throws Exception {
@@ -32,6 +33,51 @@ public class SenderConsumerIT extends AbstractKafkaContainerTest {
 
         // Set up receiver
         try (DefaultKafkaReceiver receiver = new DefaultKafkaReceiver("test-receiver", consumerProperties,
+                record -> {
+                    log.info("Received: {}", record.value());
+                    receiveLatch.countDown();
+                    return reactor.core.publisher.Mono.empty();
+                })) {
+
+            // Set up sender
+            try (DefaultReactorKafkaSender sender = new DefaultReactorKafkaSender(senderProperties,
+                    result -> {
+                        if (result.exception() != null) {
+                            log.error("Send failed", result.exception());
+                            fail("Send failed: " + result.exception().getMessage());
+                        } else {
+                            log.info("Sent message to {}", result.recordMetadata().topic());
+                            sendLatch.countDown();
+                        }
+                    })) {
+
+                Scheduler senderScheduler = Schedulers.newParallel("sender", Runtime.getRuntime().availableProcessors());
+                // Send messages
+                Flux.range(0, MESSAGE_COUNT)
+                        .flatMap(i -> {
+                            return Mono.defer(() -> {
+                                return sender.send(TOPIC, String.valueOf(i));
+                            }).subscribeOn(senderScheduler);
+                        })
+                        .subscribe();
+
+                // Wait for all operations to complete
+                assertTrue(sendLatch.await(30, TimeUnit.SECONDS), "Timeout waiting for sends");
+                assertTrue(receiveLatch.await(30, TimeUnit.SECONDS), "Timeout waiting for receives");
+            }
+        }
+    }
+
+    @Test
+    void testReactorSenderAndConsumer2() throws Exception {
+        CountDownLatch sendLatch = new CountDownLatch(MESSAGE_COUNT);
+        CountDownLatch receiveLatch = new CountDownLatch(MESSAGE_COUNT);
+
+        // Configure consumer
+        consumerProperties.setTopic(Collections.singletonList(TOPIC));
+
+        // Set up receiver
+        try (DefaultReactorKafkaConsumer receiver = new DefaultReactorKafkaConsumer("test-receiver", consumerProperties,
                 record -> {
                     log.info("Received: {}", record.value());
                     receiveLatch.countDown();

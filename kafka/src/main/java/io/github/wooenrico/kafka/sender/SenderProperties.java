@@ -30,6 +30,8 @@ public class SenderProperties {
      */
     private Duration sinksSubscribeAwait = Duration.ofSeconds(5);
 
+    private Duration sinksSubscribeExtraAwait = Duration.ofSeconds(1);
+
     public Boolean getEnabled() {
         return enabled;
     }
@@ -86,6 +88,15 @@ public class SenderProperties {
         this.sinksSubscribeAwait = sinksSubscribeAwait;
     }
 
+    public Duration getSinksSubscribeExtraAwait() {
+        return sinksSubscribeExtraAwait;
+    }
+
+    public void setSinksSubscribeExtraAwait(Duration sinksSubscribeExtraAwait) {
+        this.sinksSubscribeExtraAwait = sinksSubscribeExtraAwait;
+    }
+
+
     @Override
     public String toString() {
         return "SenderProperties{" +
@@ -93,6 +104,10 @@ public class SenderProperties {
                 ", properties=" + properties +
                 ", closeTimeout=" + closeTimeout +
                 ", queueSize=" + queueSize +
+                ", sinksEmitTimeout=" + sinksEmitTimeout +
+                ", sinksCacheSize=" + sinksCacheSize +
+                ", sinksSubscribeAwait=" + sinksSubscribeAwait +
+                ", sinksSubscribeExtraAwait=" + sinksSubscribeExtraAwait +
                 '}';
     }
 

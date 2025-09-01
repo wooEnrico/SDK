@@ -13,14 +13,16 @@ public class ReactorKafkaSenderSinksManyCache<K, V, T> extends SinksManyCache<Th
     private final reactor.kafka.sender.KafkaSender<K, V> kafkaSender;
     private final Consumer<SenderResult<T>> senderResultConsumer;
     private final Duration sinksSubscribeAwait;
+    private final Duration sinksSubscribeExtraAwait;
     private final Duration cacheDuration;
     private final int cacheMaximumSize;
     private final int backpressureBuffer;
 
-    public ReactorKafkaSenderSinksManyCache(KafkaSender<K, V> kafkaSender, Consumer<SenderResult<T>> senderResultConsumer, Duration sinksSubscribeAwait, Duration cacheDuration, int cacheMaximumSize, int backpressureBuffer) {
+    public ReactorKafkaSenderSinksManyCache(KafkaSender<K, V> kafkaSender, Consumer<SenderResult<T>> senderResultConsumer, Duration sinksSubscribeAwait, Duration sinksSubscribeExtraAwait, Duration cacheDuration, int cacheMaximumSize, int backpressureBuffer) {
         this.kafkaSender = kafkaSender;
         this.senderResultConsumer = senderResultConsumer;
         this.sinksSubscribeAwait = sinksSubscribeAwait;
+        this.sinksSubscribeExtraAwait = sinksSubscribeExtraAwait;
         this.cacheDuration = cacheDuration;
         this.cacheMaximumSize = cacheMaximumSize;
         this.backpressureBuffer = backpressureBuffer;
@@ -39,6 +41,11 @@ public class ReactorKafkaSenderSinksManyCache<K, V, T> extends SinksManyCache<Th
     @Override
     protected Duration getSinksSubscribeAwait() {
         return this.sinksSubscribeAwait;
+    }
+
+    @Override
+    public Duration getSinksSubscribeExtraAwait() {
+        return this.sinksSubscribeExtraAwait;
     }
 
     @Override
