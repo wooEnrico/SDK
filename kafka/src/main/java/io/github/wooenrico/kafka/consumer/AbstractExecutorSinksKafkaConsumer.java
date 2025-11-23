@@ -14,13 +14,13 @@ import reactor.core.scheduler.Schedulers;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Supplier;
 
-public abstract class AbstractExecutorReactorKafkaConsumer<K, V> extends AbstractReactorKafkaConsumer<K, V> {
+public abstract class AbstractExecutorSinksKafkaConsumer<K, V> extends AbstractSinksKafkaConsumer<K, V> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractExecutorReactorKafkaConsumer.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractExecutorSinksKafkaConsumer.class);
     private final ThreadPoolExecutor threadPoolExecutor;
     private final Scheduler scheduler;
 
-    public AbstractExecutorReactorKafkaConsumer(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractExecutorSinksKafkaConsumer(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.scheduler = Schedulers.fromExecutor(threadPoolExecutor);

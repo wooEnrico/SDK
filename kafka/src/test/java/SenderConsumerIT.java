@@ -1,6 +1,6 @@
 import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
-import io.github.wooenrico.kafka.consumer.DefaultReactorKafkaConsumer;
+import io.github.wooenrico.kafka.consumer.DefaultSinksKafkaConsumer;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -77,7 +77,7 @@ public class SenderConsumerIT extends AbstractKafkaContainerTest {
         consumerProperties.setTopic(Collections.singletonList(TOPIC));
 
         // Set up receiver
-        try (DefaultReactorKafkaConsumer receiver = new DefaultReactorKafkaConsumer("test-receiver", consumerProperties,
+        try (DefaultSinksKafkaConsumer receiver = new DefaultSinksKafkaConsumer("test-sinks", consumerProperties,
                 record -> {
                     log.info("Received: {}", record.value());
                     receiveLatch.countDown();
@@ -91,7 +91,7 @@ public class SenderConsumerIT extends AbstractKafkaContainerTest {
                             log.error("Send failed", result.exception());
                             fail("Send failed: " + result.exception().getMessage());
                         } else {
-                            log.info("Sent message to {}", result.recordMetadata().topic());
+                            //log.info("Sent message to {}", result.recordMetadata().topic());
                             sendLatch.countDown();
                         }
                     })) {

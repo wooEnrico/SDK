@@ -7,15 +7,15 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-public class DefaultReactorKafkaConsumer extends AbstractRateLimitExecutorReactorKafkaConsumer<String, String> {
+public class DefaultSinksKafkaConsumer extends AbstractRateLimitExecutorSinksKafkaConsumer<String, String> {
 
     private final Function<ConsumerRecord<String, String>, Mono<Void>> consumerRecordMonoFunction;
 
-    public DefaultReactorKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer) {
+    public DefaultSinksKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer) {
         this(name, consumerProperties, consumer, null);
     }
 
-    public DefaultReactorKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public DefaultSinksKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Function<ConsumerRecord<String, String>, Mono<Void>> consumer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, new StringDeserializer(), new StringDeserializer(), consumerRebalanceListener);
         this.consumerRecordMonoFunction = consumer;
     }

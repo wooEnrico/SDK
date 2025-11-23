@@ -1,6 +1,6 @@
 import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
-import io.github.wooenrico.kafka.consumer.DefaultReactorKafkaConsumer;
+import io.github.wooenrico.kafka.consumer.DefaultSinksKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -71,7 +71,7 @@ public class TestConsumer {
         };
 
         // reactor consumer
-        try (DefaultReactorKafkaConsumer defaultReactorKafkaReceiver = new DefaultReactorKafkaConsumer("reactor-test1", consumerProperties, handler)) {
+        try (DefaultSinksKafkaConsumer defaultReactorKafkaReceiver = new DefaultSinksKafkaConsumer("sinks-test1", consumerProperties, handler)) {
             countDownLatch.await();
         } catch (Exception e) {
             log.error("reactor consumer kafka record error", e);

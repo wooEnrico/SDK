@@ -6,11 +6,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import reactor.core.publisher.Mono;
 
-public abstract class AbstractRateLimitExecutorReactorKafkaConsumer<K, V> extends AbstractExecutorReactorKafkaConsumer<K, V> {
+public abstract class AbstractRateLimitExecutorSinksKafkaConsumer<K, V> extends AbstractExecutorSinksKafkaConsumer<K, V> {
 
     private final RateLimiter rateLimiter;
 
-    public AbstractRateLimitExecutorReactorKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractRateLimitExecutorSinksKafkaConsumer(String name, RateLimitExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
         this.rateLimiter = consumerProperties.getRate() == null ? null : RateLimiter.create(consumerProperties.getRate());
     }

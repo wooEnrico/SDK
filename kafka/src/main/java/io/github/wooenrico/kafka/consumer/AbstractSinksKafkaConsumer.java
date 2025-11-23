@@ -12,13 +12,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 
-public abstract class AbstractReactorKafkaConsumer<K, V> extends AbstractKafkaConsumer<K, V> {
+public abstract class AbstractSinksKafkaConsumer<K, V> extends AbstractKafkaConsumer<K, V> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractReactorKafkaConsumer.class);
-    private final Sinks.Many<Flux<ConsumerRecord<K, V>>> many = Sinks.many().unicast().onBackpressureBuffer(Queues.newArrayBlockingQueue(1));
+    private static final Logger log = LoggerFactory.getLogger(AbstractSinksKafkaConsumer.class);
+    private final Sinks.Many<Flux<ConsumerRecord<K, V>>> many = Sinks.many().unicast().onBackpressureBuffer(Queues.newArrayBlockingQueue(Runtime.getRuntime().availableProcessors() + 1));
     private final Disposable subscribe;
 
-    public AbstractReactorKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractSinksKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
         this.subscribe = this.many.asFlux().flatMap(this::handle).subscribe();
     }
