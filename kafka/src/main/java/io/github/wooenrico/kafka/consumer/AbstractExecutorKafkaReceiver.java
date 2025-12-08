@@ -32,18 +32,18 @@ public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaR
     public void close() {
         super.close();
         this.threadPoolExecutor.shutdown();
+        this.scheduler.dispose();
     }
 
     @Override
     protected Flux<ConsumerRecord<K, V>> handle(Flux<ConsumerRecord<K, V>> consumerRecordFlux) {
         return consumerRecordFlux.flatMap(record -> {
-            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record)
-                    .thenReturn(record)
+            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record).thenReturn(record))
+                    .subscribeOn(this.scheduler)
                     .onErrorResume(throwable -> {
-                        log.error("executorHandle error", throwable);
+                        log.error("executorHandle error for record: topic={}, partition={}, offset={}", record.topic(), record.partition(), record.offset(), throwable);
                         return Mono.just(record);
-                    })
-            ).subscribeOn(this.scheduler);
+                    });
         });
     }
 
