@@ -35,13 +35,12 @@ public abstract class AbstractExecutorSinksKafkaConsumer<K, V> extends AbstractS
     @Override
     protected Flux<ConsumerRecord<K, V>> handle(Flux<ConsumerRecord<K, V>> consumerRecordFlux) {
         return consumerRecordFlux.flatMap(record -> {
-            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record)
-                    .thenReturn(record)
+            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record).thenReturn(record))
+                    .subscribeOn(this.scheduler)
                     .onErrorResume(throwable -> {
-                        log.error("executorHandle error", throwable);
+                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(), record.offset(), record.value(), throwable);
                         return Mono.just(record);
-                    })
-            ).subscribeOn(this.scheduler);
+                    });
         });
     }
 

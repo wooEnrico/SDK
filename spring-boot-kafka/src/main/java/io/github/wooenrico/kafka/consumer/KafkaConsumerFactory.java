@@ -47,9 +47,11 @@ public class KafkaConsumerFactory extends AbstractKafkaConsumerFactory implement
         IKafkaHandler handler = this.applicationContext.getBean(handlerBeanName, IKafkaHandler.class);
 
         if (handler instanceof KafkaHandler) {
-            this.createConsumer(key, properties, (DefaultKafkaHandler) handler);
+            this.createConsumer(key, properties, (KafkaHandler) handler);
         } else if (handler instanceof ReactorKafkaHandler) {
-            this.createConsumer(key, properties, (DefaultReactorKafkaHandler) handler);
+            this.createConsumer(key, properties, (ReactorKafkaHandler) handler);
+        } else if (handler instanceof SinksKafkaHandler) {
+            this.createSinkConsumer(key, properties, (SinksKafkaHandler) handler);
         } else {
             log.error("no kafka handler for {}", properties);
         }

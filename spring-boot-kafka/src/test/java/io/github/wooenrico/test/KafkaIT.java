@@ -4,6 +4,7 @@ import io.github.wooenrico.MainApp;
 import io.github.wooenrico.config.TestConfig;
 import io.github.wooenrico.handler.MyHandler;
 import io.github.wooenrico.handler.MyReactorHandler;
+import io.github.wooenrico.handler.MySinksHandler;
 import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.sender.DefaultKafkaProducer;
 import io.github.wooenrico.kafka.sender.DefaultReactorKafkaSender;
@@ -42,6 +43,10 @@ public class KafkaIT {
     private MyReactorHandler myReactorHandler;
 
     @Autowired
+    @Qualifier("mySinksHandler")
+    private MySinksHandler mySinksHandler;
+
+    @Autowired
     @Qualifier("defaultKafkaProducer")
     private DefaultKafkaProducer defaultKafkaProducer;
 
@@ -63,10 +68,12 @@ public class KafkaIT {
                 .flatMap(i -> {
                     String s = "test" + i;
                     defaultKafkaProducer.send("test1", s);
+                    defaultKafkaProducer.send("test3", s);
                     return defaultReactorKafkaSender.send("test2", s);
                 }).subscribe();
 
         assertTrue(myHandler.getLatch().await(30, TimeUnit.SECONDS), "Timeout waiting for sends");
         assertTrue(myReactorHandler.getLatch().await(30, TimeUnit.SECONDS), "Timeout waiting for receives");
+        assertTrue(mySinksHandler.getLatch().await(30, TimeUnit.SECONDS), "Timeout waiting for receives");
     }
 }

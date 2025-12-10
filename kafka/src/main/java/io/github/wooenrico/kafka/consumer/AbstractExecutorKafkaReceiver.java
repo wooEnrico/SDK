@@ -41,7 +41,7 @@ public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaR
             return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record).thenReturn(record))
                     .subscribeOn(this.scheduler)
                     .onErrorResume(throwable -> {
-                        log.error("executorHandle error for record: topic={}, partition={}, offset={}", record.topic(), record.partition(), record.offset(), throwable);
+                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(), record.offset(), record.value(), throwable);
                         return Mono.just(record);
                     });
         });

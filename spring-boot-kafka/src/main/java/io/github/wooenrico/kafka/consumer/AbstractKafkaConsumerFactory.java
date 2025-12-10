@@ -36,7 +36,7 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
 
     protected abstract void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception;
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Consumer<ConsumerRecords<String, String>> consumer) throws Exception {
+    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Consumer<ConsumerRecords<String, String>> consumer) {
         log.info("create kafka consumer {}, {}", properties, consumer);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, consumer);
@@ -44,11 +44,19 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
         }
     }
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) throws Exception {
+    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
         log.info("create reactor kafka consumer {}, {}", properties, function);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultKafkaReceiver reactorKafkaReceiver = new DefaultKafkaReceiver(key + i, properties, function);
             this.closeableObjects.add(reactorKafkaReceiver);
+        }
+    }
+
+    protected void createSinkConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
+        log.info("create reactor sinks kafka consumer {}, {}", properties, function);
+        for (int i = 0; i < properties.getConcurrency(); i++) {
+            DefaultSinksKafkaConsumer sinksKafkaConsumer = new DefaultSinksKafkaConsumer(key + i, properties, function);
+            this.closeableObjects.add(sinksKafkaConsumer);
         }
     }
 

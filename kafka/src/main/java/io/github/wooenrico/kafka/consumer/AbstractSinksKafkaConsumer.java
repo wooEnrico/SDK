@@ -11,6 +11,9 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
+import java.time.Duration;
+import java.util.concurrent.locks.LockSupport;
+
 
 public abstract class AbstractSinksKafkaConsumer<K, V> extends AbstractKafkaConsumer<K, V> {
 
@@ -37,6 +40,9 @@ public abstract class AbstractSinksKafkaConsumer<K, V> extends AbstractKafkaCons
         Flux<ConsumerRecord<K, V>> consumerRecordFlux = Flux.fromIterable(records);
         this.many.emitNext(consumerRecordFlux, (signalType, emission) -> {
             log.error("consumer emitNext failed: {}, {}", signalType, emission);
+            if (emission == Sinks.EmitResult.FAIL_OVERFLOW) {
+                LockSupport.parkNanos(Duration.ofSeconds(1).toNanos());
+            }
             return emission.isFailure();
         });
     }
