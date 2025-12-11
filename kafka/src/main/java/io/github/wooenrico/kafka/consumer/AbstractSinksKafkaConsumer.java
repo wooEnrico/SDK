@@ -23,7 +23,13 @@ public abstract class AbstractSinksKafkaConsumer<K, V> extends AbstractKafkaCons
 
     public AbstractSinksKafkaConsumer(String name, ConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
-        this.subscribe = this.many.asFlux().flatMap(this::handle).subscribe();
+        this.subscribe = this.many.asFlux()
+                .concatMap(recordFlux ->
+                        this.handle(recordFlux).onErrorContinue((throwable, obj) -> log.error("Error processing record in flux, continuing: {}", obj, throwable))
+                )
+                .onErrorContinue((throwable, obj) -> log.error("Error in stream processing, continuing: {}", obj, throwable))
+                .doOnError(error -> log.error("Fatal error in stream, this should not happen", error))
+                .subscribe();
     }
 
     @Override

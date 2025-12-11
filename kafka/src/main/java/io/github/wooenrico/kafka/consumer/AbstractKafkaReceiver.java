@@ -1,5 +1,6 @@
 package io.github.wooenrico.kafka.consumer;
 
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.slf4j.Logger;
@@ -75,15 +76,13 @@ public abstract class AbstractKafkaReceiver<K, V> implements Closeable {
         final Runnable reConsumerRunnable = () -> this.subscribe(kafkaReceiver);
 
         Disposable disposable = kafkaReceiver.receiveAutoAck()
+                .concatMap(consumerRecordFlux ->
+                        this.handle(consumerRecordFlux).onErrorContinue((throwable, obj) -> log.error("Error processing record in flux, continuing: {}", obj, throwable))
+                )
+                .onErrorContinue(e -> !(e instanceof CommitFailedException), (e, o) -> log.warn("Error in stream processing, continuing:{}", o, e))
                 .doOnError(e -> {
                     log.error("kafka receiver recreate {}", this.name, e);
                     reConsumerRunnable.run();
-                })
-                .concatMap(consumerRecordFlux -> {
-                    return this.handle(consumerRecordFlux).onErrorResume(throwable -> {
-                        log.error("kafka receiver handle error", throwable);
-                        return consumerRecordFlux;
-                    });
                 })
                 .subscribe();
 
