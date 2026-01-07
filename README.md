@@ -15,6 +15,111 @@
 * [spring-boot-data-redis](https://github.com/wooEnrico/SDK/blob/redis-2.7.5/README.md)
 * [spring-boot3-data-redis](https://github.com/wooEnrico/SDK/tree/redis-3.1.2/README.md)
 
+# spring-boot-kafka
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-kafka</artifactId>
+    </dependency>
+</dependencies>
+```
+
+## properties
+
+```properties
+spring.kafka.source.bootstrap.servers=localhost:9092
+spring.kafka.source.group.id=test
+spring.kafka.source.auto.offset.reset=latest
+spring.kafka.source.enable.auto.commit=true
+spring.kafka.target.bootstrap.servers=localhost:29092
+spring.kafka.target.acks=-1
+spring.kafka.target.retries=3
+spring.kafka.target.batch.size=16384
+```
+
+## configuration
+
+```java
+@Configuration
+public class KafkaConfig {
+    // ================== Source Kafka (Consumer) ==================
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.kafka.source")
+    public Map<String, String> sourceKafkaProperties() {
+        return new HashMap<>();
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> sourceConsumerFactory() {
+        Map<String, Object> props = new HashMap<>(sourceKafkaProperties());
+        props.putIfAbsent(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.putIfAbsent(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    @Bean(name = "sourceContainerFactory")
+    public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> sourceContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(sourceConsumerFactory());
+        factory.setBatchListener(true);
+        return factory;
+    }
+
+    // ================== Target Kafka (Producer) ==================
+
+    @Bean
+    @ConfigurationProperties(prefix = "spring.kafka.target")
+    public Map<String, String> targetKafkaProperties() {
+        return new HashMap<>();
+    }
+
+    @Bean
+    public ProducerFactory<String, String> targetProducerFactory() {
+        Map<String, Object> props = new HashMap<>(targetKafkaProperties());
+        props.putIfAbsent(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.putIfAbsent(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+
+    @Bean(name = "targetKafkaTemplate")
+    public KafkaTemplate<String, String> targetKafkaTemplate() {
+        return new KafkaTemplate<>(targetProducerFactory());
+    }
+}
+```
+
+## example
+
+```java
+@Slf4j
+@Component
+public class MyKafkaListener {
+
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    public MyKafkaListener(@Qualifier("targetKafkaTemplate") KafkaTemplate<String, String> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+    @KafkaListener(topics = "test", containerFactory = "sourceContainerFactory")
+    public void processMessage(List<ConsumerRecord<String, String>> consumerRecords) {
+        for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
+            log.info("Received message: {} from topic: {}, partition: {}", consumerRecord.value(), consumerRecord.topic(), consumerRecord.partition());
+            // Add your message processing logic here
+            kafkaTemplate.send("test", consumerRecord.value())
+                    .thenAccept(result -> {
+                        log.info("Message forwarded to target Kafka topic 'test': {}", consumerRecord.value());
+                    });
+        }
+    }
+}
+```
+
 # spring-data-jdbc
 
 ## dependency
