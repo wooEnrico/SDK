@@ -17,6 +17,21 @@
 
 # spring-boot-kafka
 
+## spring kafka for spring boot <= 3.5.9
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+        <version>3.3.11</version>
+    </dependency>
+</dependencies>
+```
+
+## spring-boot-kafka for spring boot 4.0.1+
+
 ```xml
 
 <dependencies>
@@ -109,7 +124,8 @@ public class MyKafkaListener {
     @KafkaListener(topics = "test", containerFactory = "sourceContainerFactory")
     public void processMessage(List<ConsumerRecord<String, String>> consumerRecords) {
         for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
-            log.info("Received message: {} from topic: {}, partition: {}", consumerRecord.value(), consumerRecord.topic(), consumerRecord.partition());
+            log.info("Received message: {} from topic: {}, partition: {}", consumerRecord.value(), consumerRecord.topic(),
+                    consumerRecord.partition());
             // Add your message processing logic here
             kafkaTemplate.send("test", consumerRecord.value())
                     .thenAccept(result -> {
