@@ -1,6 +1,6 @@
 package io.github.wooenrico.redis;
 
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.data.redis.connection.*;
 import org.springframework.util.StringUtils;
@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
 
 public abstract class RedisConnectionConfiguration {
 
-    protected final RedisProperties properties;
+    protected final DataRedisProperties properties;
     protected final SslBundles sslBundles;
 
-    public RedisConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
+    public RedisConnectionConfiguration(DataRedisProperties properties, SslBundles sslBundles) {
         this.properties = properties;
         this.sslBundles = sslBundles;
     }
@@ -38,16 +38,19 @@ public abstract class RedisConnectionConfiguration {
     }
 
     protected final RedisSentinelConfiguration getSentinelConfig() {
-        RedisProperties.Sentinel sentinelProperties = this.properties.getSentinel();
-        if (sentinelProperties == null) {
+        DataRedisProperties.Sentinel sentinelProperties = this.properties.getSentinel();
+        if (sentinelProperties == null || sentinelProperties.getNodes() == null) {
             return null;
         }
 
-        RedisSentinelConfiguration config = new RedisSentinelConfiguration();
-        config.master(sentinelProperties.getMaster());
-
         List<RedisNode> nodeList = sentinelProperties.getNodes().stream().map(RedisNode::fromString).collect(Collectors.toList());
-
+        if (nodeList.isEmpty()) {
+            return null;
+        }
+        RedisSentinelConfiguration config = new RedisSentinelConfiguration();
+        if (sentinelProperties.getMaster() != null) {
+            config.master(sentinelProperties.getMaster());
+        }
         config.setSentinels(nodeList);
         config.setUsername(this.properties.getUsername());
         if (this.properties.getPassword() != null) {
@@ -64,11 +67,11 @@ public abstract class RedisConnectionConfiguration {
     }
 
     protected final RedisClusterConfiguration getClusterConfiguration() {
-        if (this.properties.getCluster() == null) {
+        if (this.properties.getCluster() == null || this.properties.getCluster().getNodes() == null) {
             return null;
         }
 
-        RedisProperties.Cluster clusterProperties = this.properties.getCluster();
+        DataRedisProperties.Cluster clusterProperties = this.properties.getCluster();
         RedisClusterConfiguration config = new RedisClusterConfiguration(clusterProperties.getNodes());
         if (clusterProperties.getMaxRedirects() != null) {
             config.setMaxRedirects(clusterProperties.getMaxRedirects());
@@ -77,6 +80,34 @@ public abstract class RedisConnectionConfiguration {
         config.setUsername(this.properties.getUsername());
         if (this.properties.getPassword() != null) {
             config.setPassword(RedisPassword.of(this.properties.getPassword()));
+        }
+
+        return config;
+    }
+
+    protected final RedisStaticMasterReplicaConfiguration getMasterReplicaConfiguration() {
+        if (this.properties.getMasterreplica() == null || this.properties.getMasterreplica().getNodes() == null) {
+            return null;
+        }
+
+        List<RedisNode> nodes = this.properties.getMasterreplica().getNodes().stream().map(RedisNode::fromString).toList();
+        if (nodes.isEmpty()) {
+            return null;
+        }
+        RedisNode redisNode = nodes.getFirst();
+        if (redisNode == null || redisNode.getHost() == null || redisNode.getPort() == null) {
+            return null;
+        }
+        RedisStaticMasterReplicaConfiguration config = new RedisStaticMasterReplicaConfiguration(redisNode.getHost(), redisNode.getPort());
+        nodes.stream().skip(1L).forEach(node -> {
+            if (node.getHost() != null && node.getPort() != null) {
+                config.addNode(node.getHost(), node.getPort());
+            }
+        });
+        config.setUsername(this.properties.getUsername());
+        String password = this.properties.getPassword();
+        if (password != null) {
+            config.setPassword(RedisPassword.of(password));
         }
 
         return config;

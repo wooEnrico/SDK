@@ -4,15 +4,17 @@ import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import io.lettuce.core.SslOptions;
 import io.lettuce.core.TimeoutOptions;
+import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.resource.ClientResources;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
+import org.springframework.data.redis.connection.RedisStaticMasterReplicaConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
@@ -20,11 +22,11 @@ import org.springframework.util.StringUtils;
 
 public class LettuceConnectionConfiguration extends RedisConnectionConfiguration {
 
-    public LettuceConnectionConfiguration(RedisProperties properties) {
+    public LettuceConnectionConfiguration(DataRedisProperties properties) {
         super(properties, null);
     }
 
-    public LettuceConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
+    public LettuceConnectionConfiguration(DataRedisProperties properties, SslBundles sslBundles) {
         super(properties, sslBundles);
     }
 
@@ -49,11 +51,16 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         if (clusterConfiguration != null) {
             return new LettuceConnectionFactory(clusterConfiguration, clientConfiguration);
         }
+
+        RedisStaticMasterReplicaConfiguration masterReplicaConfiguration = this.getMasterReplicaConfiguration();
+        if (masterReplicaConfiguration != null) {
+            return new LettuceConnectionFactory(masterReplicaConfiguration, clientConfiguration);
+        }
         // standalone
         return new LettuceConnectionFactory(this.getStandaloneConfig(), clientConfiguration);
     }
 
-    public LettuceClientConfiguration.LettuceClientConfigurationBuilder getLettuceClientConfiguration(ClientResources clientResources, RedisProperties.Pool pool) {
+    public LettuceClientConfiguration.LettuceClientConfigurationBuilder getLettuceClientConfiguration(ClientResources clientResources, DataRedisProperties.Pool pool) {
 
         LettuceClientConfiguration.LettuceClientConfigurationBuilder builder;
         // pool or not
@@ -95,7 +102,7 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
         // cluster or not
         if (this.properties.getCluster() != null) {
             ClusterClientOptions.Builder cluster = ClusterClientOptions.builder();
-            RedisProperties.Lettuce.Cluster.Refresh refreshProperties = this.properties.getLettuce().getCluster().getRefresh();
+            DataRedisProperties.Lettuce.Cluster.Refresh refreshProperties = this.properties.getLettuce().getCluster().getRefresh();
             ClusterTopologyRefreshOptions.Builder refreshBuilder = ClusterTopologyRefreshOptions.builder().dynamicRefreshSources(refreshProperties.isDynamicRefreshSources());
             if (refreshProperties.getPeriod() != null) {
                 refreshBuilder.refreshPeriod(refreshProperties.getPeriod());
@@ -128,8 +135,8 @@ public class LettuceConnectionConfiguration extends RedisConnectionConfiguration
     }
 
 
-    public GenericObjectPoolConfig<?> getPoolConfig(RedisProperties.Pool properties) {
-        GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();
+    public GenericObjectPoolConfig<StatefulConnection<?, ?>> getPoolConfig(DataRedisProperties.Pool properties) {
+        GenericObjectPoolConfig<StatefulConnection<?, ?>> config = new GenericObjectPoolConfig<>();
         config.setMaxTotal(properties.getMaxActive());
         config.setMaxIdle(properties.getMaxIdle());
         config.setMinIdle(properties.getMinIdle());

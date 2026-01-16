@@ -1,7 +1,7 @@
 # USEAGE
 
-java version >= 17
-spring boot version = 3.1.2
+java version >= 25
+spring boot version = 4.0.1
 
 ## dependency
 
@@ -10,7 +10,7 @@ spring boot version = 3.1.2
     <dependency>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-data-redis</artifactId>
-        <version>3.1.2.1</version>
+        <version>4.0.1</version>
     </dependency>
 </dependencies>
 ```
@@ -33,7 +33,7 @@ public class AutoRedisConfiguration {
     }
 
     @Bean
-    public RedisConnectionFactory testRedisConnectionFactory(@Qualifier("testRedisProperties") RedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
+    public RedisConnectionFactory testRedisConnectionFactory(@Qualifier("testRedisProperties") DataRedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
         return RedisProperties.ClientType.LETTUCE.equals(redisProperties.getClientType()) ?
                 new LettuceConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory()
                 : new JedisConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory();
@@ -51,7 +51,7 @@ public class AutoRedisConfiguration {
     }
 
     @Bean
-    public LettuceConnectionFactory test2RedisConnectionFactory(@Qualifier("test2RedisProperties") RedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
+    public LettuceConnectionFactory test2RedisConnectionFactory(@Qualifier("test2RedisProperties") DataRedisProperties redisProperties, ObjectProvider<SslBundles> sslBundles) {
         return new LettuceConnectionConfiguration(redisProperties, sslBundles.getIfAvailable()).createRedisConnectionFactory();
     }
 

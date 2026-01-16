@@ -1,6 +1,6 @@
 package io.github.wooenrico.redis;
 
-import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisProperties;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.ssl.SslOptions;
@@ -15,11 +15,11 @@ import javax.net.ssl.SSLParameters;
 
 public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
 
-    public JedisConnectionConfiguration(RedisProperties properties) {
+    public JedisConnectionConfiguration(DataRedisProperties properties) {
         super(properties, null);
     }
 
-    public JedisConnectionConfiguration(RedisProperties properties, SslBundles sslBundles) {
+    public JedisConnectionConfiguration(DataRedisProperties properties, SslBundles sslBundles) {
         super(properties, sslBundles);
     }
 
@@ -57,7 +57,7 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
         }
         // pool
         if (this.properties.getJedis() != null) {
-            RedisProperties.Pool pool = this.properties.getJedis().getPool();
+            DataRedisProperties.Pool pool = this.properties.getJedis().getPool();
             if (pool != null && pool.getEnabled() != null && pool.getEnabled()) {
                 builder.usePooling().poolConfig(this.jedisPoolConfig(pool));
             }
@@ -86,7 +86,7 @@ public class JedisConnectionConfiguration extends RedisConnectionConfiguration {
         return builder;
     }
 
-    public JedisPoolConfig jedisPoolConfig(RedisProperties.Pool pool) {
+    public JedisPoolConfig jedisPoolConfig(DataRedisProperties.Pool pool) {
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMaxTotal(pool.getMaxActive());
         config.setMaxIdle(pool.getMaxIdle());
