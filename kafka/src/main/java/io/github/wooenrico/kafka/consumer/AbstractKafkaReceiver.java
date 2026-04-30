@@ -57,11 +57,9 @@ public abstract class AbstractKafkaReceiver<K, V> implements Closeable {
     private void subscribe(KafkaReceiver<K, V> kafkaReceiver) {
         if (kafkaReceiver != null) {
             Disposable remove = this.subscribers.remove(kafkaReceiver);
-            if (remove == null) {
-                return;
+            if (remove != null) {
+                remove.dispose();
             }
-
-            remove.dispose();
         }
 
         if (this.close.get()) {

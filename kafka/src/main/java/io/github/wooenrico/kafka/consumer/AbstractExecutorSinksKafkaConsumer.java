@@ -20,7 +20,8 @@ public abstract class AbstractExecutorSinksKafkaConsumer<K, V> extends AbstractS
     private final ThreadPoolExecutor threadPoolExecutor;
     private final Scheduler scheduler;
 
-    public AbstractExecutorSinksKafkaConsumer(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
+    public AbstractExecutorSinksKafkaConsumer(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer,
+            Deserializer<V> valueDeserializer, ConsumerRebalanceListener consumerRebalanceListener) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, consumerRebalanceListener);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.scheduler = Schedulers.fromExecutor(threadPoolExecutor);
@@ -35,13 +36,14 @@ public abstract class AbstractExecutorSinksKafkaConsumer<K, V> extends AbstractS
     @Override
     protected Flux<ConsumerRecord<K, V>> handle(Flux<ConsumerRecord<K, V>> consumerRecordFlux) {
         return consumerRecordFlux.flatMap(record -> {
-            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record).thenReturn(record))
+            return Mono.defer(() -> this.executorHandle(record).thenReturn(record))
                     .subscribeOn(this.scheduler)
                     .onErrorResume(throwable -> {
-                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(), record.offset(), record.value(), throwable);
+                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(),
+                                record.offset(), record.value(), throwable);
                         return Mono.just(record);
                     });
-        });
+        }, this.threadPoolExecutor.getMaximumPoolSize());
     }
 
     protected abstract Mono<Void> executorHandle(ConsumerRecord<K, V> record);

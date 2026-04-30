@@ -14,7 +14,6 @@ import reactor.kafka.receiver.ReceiverPartition;
 import java.util.Collection;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaReceiver<K, V> {
 
@@ -22,7 +21,8 @@ public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaR
     private final ThreadPoolExecutor threadPoolExecutor;
     private final Scheduler scheduler;
 
-    public AbstractExecutorKafkaReceiver(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer, Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
+    public AbstractExecutorKafkaReceiver(String name, ExecutorConsumerProperties consumerProperties, Deserializer<K> keyDeserializer,
+            Deserializer<V> valueDeserializer, Consumer<Collection<ReceiverPartition>> onAssign, Consumer<Collection<ReceiverPartition>> onRevoke) {
         super(name, consumerProperties, keyDeserializer, valueDeserializer, onAssign, onRevoke);
         this.threadPoolExecutor = KafkaUtil.newThreadPoolExecutor(name, consumerProperties);
         this.scheduler = Schedulers.fromExecutor(threadPoolExecutor);
@@ -38,13 +38,14 @@ public abstract class AbstractExecutorKafkaReceiver<K, V> extends AbstractKafkaR
     @Override
     protected Flux<ConsumerRecord<K, V>> handle(Flux<ConsumerRecord<K, V>> consumerRecordFlux) {
         return consumerRecordFlux.flatMap(record -> {
-            return Mono.defer((Supplier<Mono<ConsumerRecord<K, V>>>) () -> this.executorHandle(record).thenReturn(record))
+            return Mono.defer(() -> this.executorHandle(record).thenReturn(record))
                     .subscribeOn(this.scheduler)
                     .onErrorResume(throwable -> {
-                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(), record.offset(), record.value(), throwable);
+                        log.error("executorHandle error for record: topic={}, partition={}, offset={}, value={}", record.topic(), record.partition(),
+                                record.offset(), record.value(), throwable);
                         return Mono.just(record);
                     });
-        });
+        }, this.threadPoolExecutor.getMaximumPoolSize());
     }
 
     protected abstract Mono<Void> executorHandle(ConsumerRecord<K, V> record);

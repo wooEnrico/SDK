@@ -71,11 +71,10 @@ public abstract class AbstractKafkaConsumer<K, V> implements Closeable {
     private void subscribe(org.apache.kafka.clients.consumer.KafkaConsumer<K, V> kafkaConsumer) {
         if (kafkaConsumer != null) {
             CompletableFuture<Void> remove = this.consumerMap.remove(kafkaConsumer);
-            if (remove == null) {
-                return;
+            if (remove != null) {
+                // kafka close is not thread-safe must call by poll thread
+                CompletableFuture.runAsync(kafkaConsumer::close, this.pollExecutor);
             }
-            // kafka close is not thread-safe must call by poll thread
-            CompletableFuture.runAsync(kafkaConsumer::close, this.pollExecutor);
         }
 
         if (this.close.get()) {
