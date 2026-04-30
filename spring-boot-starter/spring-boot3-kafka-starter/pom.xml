@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.wooenrico</groupId>
         <artifactId>spring-boot-starter</artifactId>
-        <version>1.0.16-SNAPSHOT</version>
+        <version>1.1.16</version>
     </parent>
 
     <name>${project.groupId}:${project.artifactId}</name>
