@@ -1,10 +1,9 @@
 package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooenrico.kafka.BeanNameRateLimitExecutorConsumerProperties;
+import io.github.wooenrico.kafka.BeanNameExecutorConsumerProperties;
 import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.util.FunctionUtil;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -32,7 +31,7 @@ public class KafkaFunctionConsumerFactory extends AbstractKafkaConsumerFactory i
     @Override
     public void afterPropertiesSet() throws Exception {
         for (String key : this.kafkaProperties.getConsumerSet()) {
-            BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
+            BeanNameExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
             this.createConsumer(key, consumerProperties);
         }
     }
@@ -47,7 +46,7 @@ public class KafkaFunctionConsumerFactory extends AbstractKafkaConsumerFactory i
         log.info("kafka function consumer factory initialized");
     }
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception {
+    protected void createConsumer(String key, BeanNameExecutorConsumerProperties properties) throws Exception {
 
         if (key == null || key.isEmpty() || properties == null) {
             return;
@@ -64,8 +63,8 @@ public class KafkaFunctionConsumerFactory extends AbstractKafkaConsumerFactory i
 
         this.resetProperties(this.applicationContext, this.functionCatalog, properties);
 
-        if (FunctionUtil.isConsumerOf(lookup, ConsumerRecords.class)) {
-            Consumer<ConsumerRecords<String, String>> consumer = this.applicationContext.getBean(handlerBeanName, Consumer.class);
+        if (FunctionUtil.isConsumerOf(lookup, ConsumerRecord.class)) {
+            Consumer<ConsumerRecord<String, String>> consumer = this.applicationContext.getBean(handlerBeanName, Consumer.class);
             this.createConsumer(key, properties, consumer);
         } else if (FunctionUtil.isFunctionOf(lookup, ConsumerRecord.class, Mono.class)) {
             Function<ConsumerRecord<String, String>, Mono<Void>> function = this.applicationContext.getBean(handlerBeanName, Function.class);
@@ -75,7 +74,7 @@ public class KafkaFunctionConsumerFactory extends AbstractKafkaConsumerFactory i
         }
     }
 
-    private void resetProperties(ApplicationContext applicationContext, FunctionCatalog functionCatalog, BeanNameRateLimitExecutorConsumerProperties properties) {
+    private void resetProperties(ApplicationContext applicationContext, FunctionCatalog functionCatalog, BeanNameExecutorConsumerProperties properties) {
         if (properties.getTopicFunctionName() != null && !properties.getTopicFunctionName().isEmpty()) {
             SimpleFunctionRegistry.FunctionInvocationWrapper lookup = functionCatalog.lookup(properties.getTopicFunctionName());
             if (FunctionUtil.isFunctionOf(lookup, List.class, List.class)) {

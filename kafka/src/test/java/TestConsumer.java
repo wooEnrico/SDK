@@ -1,10 +1,9 @@
 import io.github.wooenrico.kafka.consumer.DefaultKafkaConsumer;
 import io.github.wooenrico.kafka.consumer.DefaultKafkaReceiver;
 import io.github.wooenrico.kafka.consumer.DefaultSinksKafkaConsumer;
-import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
+import io.github.wooenrico.kafka.consumer.ExecutorConsumerProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,7 @@ import java.util.function.Function;
 public class TestConsumer {
     private static final Logger log = LoggerFactory.getLogger(TestConsumer.class);
 
-    public static RateLimitExecutorConsumerProperties LOCAL_CONSUMER = new RateLimitExecutorConsumerProperties() {
+    public static ExecutorConsumerProperties LOCAL_CONSUMER = new ExecutorConsumerProperties() {
         {
             setEnabled(true);
             addProperties(ConsumerConfig.GROUP_ID_CONFIG, "local-consumer");
@@ -35,15 +34,13 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        RateLimitExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
+        ExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
 
         // record handler
-        Consumer<ConsumerRecords<String, String>> handler = records -> {
-            for (ConsumerRecord<String, String> record : records) {
-                countDownLatch.countDown();
-                log.info("{}", record.value());
-            }
+        Consumer<ConsumerRecord<String, String>> handler = record -> {
+            countDownLatch.countDown();
+            log.info("{}", record.value());
         };
 
         // consumer
@@ -61,7 +58,7 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(100);
 
         // kafka consumer properties
-        RateLimitExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
+        ExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
         // record handler
         Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {
@@ -85,7 +82,7 @@ public class TestConsumer {
         CountDownLatch countDownLatch = new CountDownLatch(1000000);
 
         // kafka consumer properties
-        RateLimitExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
+        ExecutorConsumerProperties consumerProperties = LOCAL_CONSUMER;
         consumerProperties.setTopic(Collections.singletonList("test"));
         // record handler
         Function<ConsumerRecord<String, String>, Mono<Void>> handler = stringStringConsumerRecord -> {

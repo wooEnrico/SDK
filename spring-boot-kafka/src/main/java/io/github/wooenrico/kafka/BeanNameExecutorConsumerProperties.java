@@ -1,12 +1,11 @@
 package io.github.wooenrico.kafka;
 
-import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
-
+import io.github.wooenrico.kafka.consumer.ExecutorConsumerProperties;
 
 /**
- * 指定handler bean name的速率限制线程池消费者配置
+ * 指定handler bean name的线程池消费者配置
  */
-public class BeanNameRateLimitExecutorConsumerProperties extends RateLimitExecutorConsumerProperties {
+public class BeanNameExecutorConsumerProperties extends ExecutorConsumerProperties {
     /**
      * spring bean 处理器名
      */

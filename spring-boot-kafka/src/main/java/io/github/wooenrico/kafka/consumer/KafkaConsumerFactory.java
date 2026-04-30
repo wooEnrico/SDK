@@ -1,6 +1,6 @@
 package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooenrico.kafka.BeanNameRateLimitExecutorConsumerProperties;
+import io.github.wooenrico.kafka.BeanNameExecutorConsumerProperties;
 import io.github.wooenrico.kafka.KafkaProperties;
 import io.github.wooenrico.kafka.handler.*;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class KafkaConsumerFactory extends AbstractKafkaConsumerFactory implement
     @Override
     public void afterPropertiesSet() throws Exception {
         for (String key : this.kafkaProperties.getConsumerSet()) {
-            BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
+            BeanNameExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
             this.createConsumer(key, consumerProperties);
         }
     }
@@ -36,7 +36,7 @@ public class KafkaConsumerFactory extends AbstractKafkaConsumerFactory implement
         log.info("kafka consumer factory initialized");
     }
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception {
+    protected void createConsumer(String key, BeanNameExecutorConsumerProperties properties) throws Exception {
 
         if (key == null || key.isEmpty() || properties == null) {
             return;

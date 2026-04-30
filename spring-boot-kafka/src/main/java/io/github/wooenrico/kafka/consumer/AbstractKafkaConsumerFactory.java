@@ -1,9 +1,8 @@
 package io.github.wooenrico.kafka.consumer;
 
-import io.github.wooenrico.kafka.BeanNameRateLimitExecutorConsumerProperties;
+import io.github.wooenrico.kafka.BeanNameExecutorConsumerProperties;
 import io.github.wooenrico.kafka.KafkaProperties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -29,14 +28,14 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
     @Override
     public void afterPropertiesSet() throws Exception {
         for (String key : this.kafkaProperties.getConsumerSet()) {
-            BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
+            BeanNameExecutorConsumerProperties consumerProperties = this.kafkaProperties.getConsumerProperties(key);
             this.createConsumer(key, consumerProperties);
         }
     }
 
-    protected abstract void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties) throws Exception;
+    protected abstract void createConsumer(String key, BeanNameExecutorConsumerProperties properties) throws Exception;
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Consumer<ConsumerRecords<String, String>> consumer) {
+    protected void createConsumer(String key, BeanNameExecutorConsumerProperties properties, Consumer<ConsumerRecord<String, String>> consumer) {
         log.info("create kafka consumer {}, {}", properties, consumer);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultKafkaConsumer kafkaConsumer = new DefaultKafkaConsumer(key + i, properties, consumer);
@@ -44,7 +43,7 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
         }
     }
 
-    protected void createConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
+    protected void createConsumer(String key, BeanNameExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
         log.info("create reactor kafka consumer {}, {}", properties, function);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultKafkaReceiver reactorKafkaReceiver = new DefaultKafkaReceiver(key + i, properties, function);
@@ -52,7 +51,7 @@ public abstract class AbstractKafkaConsumerFactory implements InitializingBean, 
         }
     }
 
-    protected void createSinkConsumer(String key, BeanNameRateLimitExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
+    protected void createSinkConsumer(String key, BeanNameExecutorConsumerProperties properties, Function<ConsumerRecord<String, String>, Mono<Void>> function) {
         log.info("create reactor sinks kafka consumer {}, {}", properties, function);
         for (int i = 0; i < properties.getConcurrency(); i++) {
             DefaultSinksKafkaConsumer sinksKafkaConsumer = new DefaultSinksKafkaConsumer(key + i, properties, function);

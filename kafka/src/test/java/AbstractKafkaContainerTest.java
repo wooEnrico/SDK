@@ -1,10 +1,9 @@
-import io.github.wooenrico.kafka.consumer.RateLimitExecutorConsumerProperties;
+import io.github.wooenrico.kafka.consumer.ExecutorConsumerProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import io.github.wooenrico.kafka.consumer.ConsumerProperties;
 import io.github.wooenrico.kafka.sender.SenderProperties;
 
 @Testcontainers
@@ -14,7 +13,7 @@ public abstract class AbstractKafkaContainerTest {
     static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
 
     protected SenderProperties senderProperties;
-    protected RateLimitExecutorConsumerProperties consumerProperties;
+    protected ExecutorConsumerProperties consumerProperties;
 
     @BeforeEach
     void setUp() {
@@ -26,7 +25,7 @@ public abstract class AbstractKafkaContainerTest {
         senderProperties.addProperties("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         // Set up consumer properties
-        consumerProperties = new RateLimitExecutorConsumerProperties();
+        consumerProperties = new ExecutorConsumerProperties();
         consumerProperties.setEnabled(true);
         consumerProperties.addProperties("group.id", "test-consumer");
         consumerProperties.addProperties("bootstrap.servers", kafka.getBootstrapServers());

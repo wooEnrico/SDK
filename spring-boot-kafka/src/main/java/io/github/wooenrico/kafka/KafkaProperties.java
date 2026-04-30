@@ -25,7 +25,7 @@ public class KafkaProperties {
     /**
      * 自定义消费者配置
      */
-    private Map<String, BeanNameRateLimitExecutorConsumerProperties> consumer = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private Map<String, BeanNameExecutorConsumerProperties> consumer = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public Properties getCommonSenderProperties() {
         return commonSenderProperties;
@@ -51,11 +51,11 @@ public class KafkaProperties {
         this.sender = sender;
     }
 
-    public Map<String, BeanNameRateLimitExecutorConsumerProperties> getConsumer() {
+    public Map<String, BeanNameExecutorConsumerProperties> getConsumer() {
         return consumer;
     }
 
-    public void setConsumer(Map<String, BeanNameRateLimitExecutorConsumerProperties> consumer) {
+    public void setConsumer(Map<String, BeanNameExecutorConsumerProperties> consumer) {
         this.consumer = consumer;
     }
 
@@ -75,8 +75,8 @@ public class KafkaProperties {
         return consumer.keySet();
     }
 
-    public BeanNameRateLimitExecutorConsumerProperties getConsumerProperties(String key) {
-        BeanNameRateLimitExecutorConsumerProperties consumerProperties = this.consumer.get(key);
+    public BeanNameExecutorConsumerProperties getConsumerProperties(String key) {
+        BeanNameExecutorConsumerProperties consumerProperties = this.consumer.get(key);
         if (consumerProperties != null) {
             consumerProperties.addCommonProperties(this.commonConsumerProperties);
         }
